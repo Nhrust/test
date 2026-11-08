@@ -140,7 +140,8 @@ if [ ! -d "$DATA/icons/$CURSOR" ]; then
 fi
 run gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR"
 if command -v fish >/dev/null; then
-	run fish -c 'fish_add_path -U ~/.local/bin'
+	# fish_add_path returns 1 when the path is already there
+	run fish -c 'fish_add_path -U ~/.local/bin' || true
 fi
 
 # 4. services
