@@ -101,6 +101,8 @@ tree() {
 	done
 }
 
+# made by the user first, so sudo-created subfolders never lock it
+[ -n "$DRY" ] || mkdir -p "$BACKUP"
 tree "$ROOT/home" "$HOME" ""
 tree "$H/home" "$HOME" ""
 tree "$ROOT/etc" /etc sudo
@@ -174,5 +176,6 @@ fi
 [ ! -s "$SSHD" ] || run sudo systemctl try-reload-or-restart sshd.service
 run "$HOME/.local/bin/zen" gtklock || say "! gtklock module not built; run: zen gtklock"
 
-[ -d "$BACKUP" ] && say "replaced files: $BACKUP"
+rmdir "$BACKUP" 2>/dev/null || true
+[ ! -d "$BACKUP" ] || say "replaced files: $BACKUP"
 say "done; log out and back in to start the session"
