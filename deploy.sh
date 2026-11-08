@@ -31,7 +31,8 @@ fi
 BACKUP="$HOME/zen-deploy-backup-$(date +%Y%m%d-%H%M%S)"
 REBUILD=$(mktemp)
 LOCALES=$(mktemp)
-trap 'rm -f "$REBUILD" "$LOCALES"' EXIT
+SSHD=$(mktemp)
+trap 'rm -f "$REBUILD" "$LOCALES" "$SSHD"' EXIT
 
 say() { printf '%s\n' "$*"; }
 run() { say "+ $*"; [ -n "$DRY" ] || "$@"; }
@@ -49,9 +50,9 @@ fi
 place() {
 	src=$1 dst=$2 sudo=$3
 	tmp=
-	if grep -q '@HOME@' "$src" 2>/dev/null; then
+	if grep -qE '@(HOME|USER)@' "$src" 2>/dev/null; then
 		tmp=$(mktemp)
-		sed "s|@HOME@|$HOME|g" "$src" > "$tmp"
+		sed "s|@HOME@|$HOME|g; s|@USER@|$(id -un)|g" "$src" > "$tmp"
 		src=$tmp
 	fi
 	if $sudo test -e "$dst" && $sudo cmp -s "$src" "$dst"; then
@@ -76,6 +77,16 @@ place() {
 	[ "$dst" = /etc/sudoers ] && mode=440
 	run $sudo install -D -m "$mode" "$src" "$dst"
 	[ -z "$tmp" ] || rm -f "$tmp"
+	case $dst in
+		/etc/ssh/*)
+			[ -z "$DRY" ] || return 0
+			if sudo sshd -t; then
+				echo 1 > "$SSHD"
+			else
+				say "! $dst: sshd -t failed, change reverted"
+				if [ -e "$BACKUP$dst" ]; then sudo cp -p "$BACKUP$dst" "$dst"; else sudo rm -f "$dst"; fi
+			fi ;;
+	esac
 }
 
 tree() {
@@ -152,6 +163,7 @@ fi
 
 # 5. boot image and lock screen module
 [ ! -s "$REBUILD" ] || run sudo mkinitcpio -P
+[ ! -s "$SSHD" ] || run sudo systemctl try-reload-or-restart sshd.service
 run "$HOME/.local/bin/zen-module-build"
 
 [ -d "$BACKUP" ] && say "replaced files: $BACKUP"

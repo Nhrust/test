@@ -9,7 +9,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 | Path | What |
 |---|---|
 | `home/` | files for `$HOME`: Niri, Waybar, Rofi, mako, gtklock, foot, fish, tmux, Neovim, Qt/GTK theme, the `zen-*` scripts |
-| `etc/`, `usr/local/` | system files: pacman, makepkg, logind, sleep, UPower, NetworkManager, nftables, Ly, zram, hooks |
+| `etc/`, `usr/local/` | system files: pacman, makepkg, logind, sleep, UPower, NetworkManager, nftables, sshd (port 9728, only your user), Ly, zram, hooks |
 | `efi/limine.conf` | boot menu |
 | `hosts/NAME/` | what differs per machine: kernel command line, initramfs modules, hardware rules, snapshots, packages, place and monitors |
 | `packages/` | package lists: `base`, `desktop`, `extra` |

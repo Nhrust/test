@@ -9,7 +9,7 @@
 | Путь | Что |
 |---|---|
 | `home/` | файлы для `$HOME`: Niri, Waybar, Rofi, mako, gtklock, foot, fish, tmux, Neovim, тема Qt/GTK, скрипты `zen-*` |
-| `etc/`, `usr/local/` | системные файлы: pacman, makepkg, logind, sleep, UPower, NetworkManager, nftables, Ly, zram, хуки |
+| `etc/`, `usr/local/` | системные файлы: pacman, makepkg, logind, sleep, UPower, NetworkManager, nftables, sshd (порт 9728, вход только вашему пользователю), Ly, zram, хуки |
 | `efi/limine.conf` | меню загрузки |
 | `hosts/ИМЯ/` | то, что отличается между машинами: строка ядра, модули initramfs, правила железа, снимки, пакеты, город и мониторы |
 | `packages/` | списки пакетов: `base`, `desktop`, `extra` |
