@@ -25,7 +25,7 @@ while [ $# -gt 0 ]; do
 done
 H="$ROOT/hosts/$HOST"
 if [ ! -d "$H" ]; then
-	echo "no hosts/$HOST — create it (copy hosts/zenbook as an example) or pass --host"
+	echo "no hosts/$HOST — create it (copy hosts/zen as an example) or pass --host"
 	ls "$ROOT/hosts"
 	exit 1
 fi
@@ -122,7 +122,7 @@ for po in "$ROOT"/po/*.po; do
 done
 [ -e "${XDG_CONFIG_HOME:-$HOME/.config}/zen/zen.conf" ] ||
 	run cp "${XDG_CONFIG_HOME:-$HOME/.config}/zen/zen.conf.example" "${XDG_CONFIG_HOME:-$HOME/.config}/zen/zen.conf"
-run "$HOME/.local/bin/zen" palette
+run "$HOME/.local/bin/zen" apply
 
 CURSOR=Bibata-Modern-Classic
 CURSOR_URL=https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.7/$CURSOR.tar.xz
@@ -171,7 +171,7 @@ fi
 # 5. boot image and lock screen module
 [ ! -s "$REBUILD" ] || run sudo mkinitcpio -P
 [ ! -s "$SSHD" ] || run sudo systemctl try-reload-or-restart sshd.service
-run "$HOME/.local/bin/zen" gtklock
+run "$HOME/.local/bin/zen" gtklock || say "! gtklock module not built; run: zen gtklock"
 
 [ -d "$BACKUP" ] && say "replaced files: $BACKUP"
 say "done; log out and back in to start the session"

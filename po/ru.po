@@ -394,3 +394,6 @@ msgstr "zen-module отключён"
 
 msgid "Built for gtklock %s, installed %s. Rebuild it: zen gtklock"
 msgstr "Собран для gtklock %s, установлен %s. Пересобери: zen gtklock"
+
+msgid "Search"
+msgstr "Поиск"

@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+"""apply — write the files generated from ~/.config/zen/zen.conf:
+the palette for Rofi and Waybar (rofi/zen-colors.rasi, waybar/zen-colors.css)
+and the translated Rofi search placeholder (rofi/zen-text.rasi)."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
+import zen  # noqa: E402
+from zen import _  # noqa: E402
+
+
+def write(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    print(path)
+
+
+colors = zen.palette()
+colors["urgent"] = colors["error"]
+search = _("Search").replace("\\", "\\\\").replace('"', '\\"')
+
+write(zen.CONFIG_HOME / "rofi/zen-colors.rasi",
+      "* {\n" + "".join(f"    zen-{k}: {v};\n" for k, v in colors.items()) + "}\n")
+write(zen.CONFIG_HOME / "rofi/zen-text.rasi", f'entry {{\n    placeholder: "{search}";\n}}\n')
+write(zen.CONFIG_HOME / "waybar/zen-colors.css",
+      "".join(f"@define-color zen-{k} {v};\n" for k, v in colors.items()))

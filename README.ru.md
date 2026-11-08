@@ -21,7 +21,7 @@
 
 | Путь | Что |
 |---|---|
-| `~/.local/bin/` | команды, которые запускаешь сам или по бинду: `zen-center` (уведомления, календарь, погода), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step` и служебная `zen` (`zen palette`, `zen gtklock`) |
+| `~/.local/bin/` | команды, которые запускаешь сам или по бинду: `zen-center` (уведомления, календарь, погода), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step` и служебная `zen` (`zen apply`, `zen gtklock`) |
 | `~/.local/lib/zen/` | внутренности: `bar/` (модули Waybar и tmux), фоновые помощники, общие `zen.py` и `zen.sh` |
 | `~/.local/share/zen/` | данные: исходник модуля gtklock, палитра консоли (`terminal.vtrgb`) |
 | `~/.config/zen/zen.conf` | твои настройки |
@@ -34,7 +34,7 @@
 
 ```sh
 git clone https://github.com/Nhrust/zen && cd zen
-cp -r hosts/zenbook hosts/$(cat /etc/hostname)   # и поправить под эту машину
+cp -r hosts/zen hosts/$(cat /etc/hostname)   # и поправить под эту машину
 ./deploy.sh --dry-run                            # сначала посмотреть каждый шаг
 ./deploy.sh
 ```
@@ -49,4 +49,4 @@ cp -r hosts/zenbook hosts/$(cat /etc/hostname)   # и поправить под 
 `~/.config/zen/zen.conf` (пример — `home/.config/zen/zen.conf.example`):
 локаль для скриптов zen, город и контакт для погоды, палитра. Язык, единицы,
 первый день недели и 12/24-часовое время берутся из локали. После смены
-палитры — `zen palette`.
+палитры или локали — `zen apply`.

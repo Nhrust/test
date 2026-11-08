@@ -21,7 +21,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Path | What |
 |---|---|
-| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen palette`, `zen gtklock`) |
+| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen apply`, `zen gtklock`) |
 | `~/.local/lib/zen/` | internals: `bar/` (Waybar and tmux modules), background helpers, the shared `zen.py` and `zen.sh` |
 | `~/.local/share/zen/` | data: the gtklock module source, the terminal palette (`terminal.vtrgb`) |
 | `~/.config/zen/zen.conf` | your settings |
@@ -34,7 +34,7 @@ On a fresh system installed by the guide (docs follow), as your user:
 
 ```sh
 git clone https://github.com/Nhrust/zen && cd zen
-cp -r hosts/zenbook hosts/$(cat /etc/hostname)   # then edit it for this machine
+cp -r hosts/zen hosts/$(cat /etc/hostname)   # then edit it for this machine
 ./deploy.sh --dry-run                            # see every step first
 ./deploy.sh
 ```
@@ -49,4 +49,4 @@ and builds the gtklock module.
 `~/.config/zen/zen.conf` (example in `home/.config/zen/zen.conf.example`):
 locale for the zen scripts, weather location and contact, and the palette.
 Language, units, first weekday and 12/24-hour time follow the locale.
-Run `zen palette` after changing the palette.
+Run `zen apply` after changing it.
