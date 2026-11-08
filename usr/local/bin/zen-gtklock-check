@@ -1,0 +1,11 @@
+#!/bin/sh
+CURRENT=$(gtklock -v 2>/dev/null | sed -n 's/^gtklock v\([0-9]*\)\..*/\1/p')
+for f in /home/*/.local/lib/gtklock/zen-module.built; do
+	[ -f "$f" ] || continue
+	BUILT=$(cat "$f")
+	if [ "$BUILT" != "$CURRENT" ]; then
+		echo "WARNING: gtklock is now v$CURRENT, but zen-module was built for v$BUILT ($f)."
+		echo "The screen will lock without the module. Rebuild it with zen-module-build."
+	fi
+done
+exit 0

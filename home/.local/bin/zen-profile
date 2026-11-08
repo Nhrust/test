@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""zen-profile — Waybar module: power-profiles-daemon profile icon.
+
+  zen-profile              print the icon and follow changes (empty for balanced)
+  zen-profile next|up|down change the profile
+"""
+import subprocess
+import sys
+
+ICONS = {"performance": "\U000F04C5", "power-saver": "\U000F0F86"}
+NAMES = [("org.freedesktop.UPower.PowerProfiles", "/org/freedesktop/UPower/PowerProfiles"),
+         ("net.hadess.PowerProfiles", "/net/hadess/PowerProfiles")]
+
+
+def active(name, path):
+    res = subprocess.run(["busctl", "get-property", "--system", name, path, name,
+                          "ActiveProfile"], capture_output=True, text=True)
+    if res.returncode != 0:
+        return None
+    return res.stdout.strip().partition(" ")[2].strip('"')
+
+
+ORDER = ["power-saver", "balanced", "performance"]
+
+
+def find():
+    for name, path in NAMES:
+        profile = active(name, path)
+        if profile is not None:
+            return name, path, profile
+    return None
+
+
+def change(how):
+    found = find()
+    if not found:
+        return 1
+    name, path, profile = found
+    i = ORDER.index(profile) if profile in ORDER else 1
+    if how == "next":
+        i = (i + 1) % len(ORDER)
+    elif how == "up":
+        i = min(i + 1, len(ORDER) - 1)
+    else:
+        i = max(i - 1, 0)
+    subprocess.run(["busctl", "set-property", "--system", name, path, name,
+                    "ActiveProfile", "s", ORDER[i]])
+    return 0
+
+
+def main():
+    if sys.argv[1:2] and sys.argv[1] in ("next", "up", "down"):
+        return change(sys.argv[1])
+    for name, path in NAMES:
+        profile = active(name, path)
+        if profile is not None:
+            break
+    else:
+        print("", flush=True)
+        return 1
+    print(ICONS.get(profile, ""), flush=True)
+    mon = subprocess.Popen(["gdbus", "monitor", "--system", "--dest", name,
+                            "--object-path", path], stdout=subprocess.PIPE, text=True)
+    for line in mon.stdout:
+        if "ActiveProfile" in line:
+            print(ICONS.get(active(name, path) or "", ""), flush=True)
+    return mon.wait()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

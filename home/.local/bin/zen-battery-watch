@@ -1,0 +1,12 @@
+#!/bin/sh
+# zen-battery-watch — notify when UPower reports the battery as critically low.
+. "${XDG_DATA_HOME:-$HOME/.local/share}/zen/sh/zen.sh"
+gdbus monitor --system --dest org.freedesktop.UPower \
+	--object-path /org/freedesktop/UPower/devices/DisplayDevice |
+while read -r line; do
+	case "$line" in
+		*"'WarningLevel': <uint32 4>"*)
+			notify-send -u critical "$(gettext "Battery is critically low")" \
+				"$(gettext "Connect the charger.")" ;;
+	esac
+done

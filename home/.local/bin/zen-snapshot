@@ -1,0 +1,387 @@
+#!/usr/bin/env python3
+"""zen-snapshot — clean the configuration and collect it into one directory.
+
+  zen-snapshot plan      show what would change: removed comments (diff),
+                         deleted backups and leftovers, collected files
+  zen-snapshot clean     do it: first an archive of every original that is
+                         changed or deleted (~/zen-originals-<date>.tar.gz),
+                         then remove the comments, backups and leftovers
+  zen-snapshot collect   copy the configuration into ~/zen-config with
+                         package lists, enabled services and deploy.sh
+
+Only comments written in Russian are removed: those were added during the
+setup; the comments that ship with programs are in English and stay.
+"""
+import ast
+import difflib
+import io
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tarfile
+import time
+import tokenize
+from pathlib import Path
+
+HOME = Path.home()
+CONF = Path(os.environ.get("XDG_CONFIG_HOME") or HOME / ".config")
+DATA = Path(os.environ.get("XDG_DATA_HOME") or HOME / ".local/share")
+CYR = re.compile(r"[А-Яа-яЁё]")
+STAMP = time.strftime("%Y%m%d-%H%M%S")
+
+HOME_PATHS = [
+    CONF / "Kvantum", CONF / "btop", CONF / "cliphist", CONF / "fastfetch", CONF / "fish",
+    CONF / "foot", CONF / "gtk-3.0", CONF / "gtk-4.0", CONF / "gtklock", CONF / "kanshi",
+    CONF / "kdeglobals", CONF / "mako", CONF / "niri", CONF / "nvim", CONF / "qt5ct",
+    CONF / "qt6ct", CONF / "rofi", CONF / "systemd/user", CONF / "theme", CONF / "tmux",
+    CONF / "user-dirs.dirs", CONF / "user-dirs.locale", CONF / "waybar", CONF / "zen",
+    HOME / ".tmux.conf", HOME / ".local/bin", DATA / "zen",
+    DATA / "icons/Bibata-Modern-Classic",
+]
+LOCALE_FILES = sorted(DATA.glob("locale/*/LC_MESSAGES/zen.mo"))
+EFI_FILES = [Path("/efi/limine.conf")]
+
+ETC_SKIP = re.compile(r"^/etc/(ssh/ssh_host_|machine-id|hostname$|\.updated$|\.pwd\.lock|"
+                      r"shadow|gshadow|passwd|group|subuid|subgid|ld\.so\.cache|adjtime|"
+                      r"pacman\.d/gnupg|ssl/|ca-certificates/|NetworkManager/system-connections|"
+                      r"ly/save\.txt|resolv\.conf|mtab|fstab|crypttab)")
+BACKUP = re.compile(r"(\.bak(-zen\d*)?|\.back|\.pre-stage\d|\.orig|\.v\d+bak)$")
+LEFTOVER_GLOBS = ["zen-backup-*", "zen-before-stage*", "zen-stage1", "zen-stage2"]
+
+
+def run(*cmd, **kw):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, **kw)
+    except FileNotFoundError:
+        return subprocess.CompletedProcess(cmd, 127, "", "")
+
+
+def sudo_read(path):
+    try:
+        return path.read_text(encoding="utf-8")
+    except PermissionError:
+        res = subprocess.run(["sudo", "cat", str(path)], capture_output=True)
+        return res.stdout.decode("utf-8", "replace") if res.returncode == 0 else None
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def sudo_write(path, text):
+    try:
+        path.write_text(text, encoding="utf-8")
+    except PermissionError:
+        subprocess.run(["sudo", "tee", str(path)], input=text.encode(), stdout=subprocess.DEVNULL, check=True)
+
+
+def sudo_remove(path):
+    try:
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    except PermissionError:
+        subprocess.run(["sudo", "rm", "-rf", "--", str(path)], check=True)
+
+
+# --- which files ---------------------------------------------------------
+
+def walk(paths):
+    for p in paths:
+        if p.is_file():
+            yield p
+        elif p.is_dir():
+            for root, dirs, files in os.walk(p):
+                dirs[:] = [d for d in dirs if d != "__pycache__"]
+                for f in files:
+                    yield Path(root) / f
+
+
+def etc_files():
+    out = set()
+    res = run("sudo", "env", "LC_ALL=C", "pacman", "-Qii")
+    out |= set(re.findall(r"\bMODIFIED\s+(/etc/\S+)", res.stdout))
+    out |= set(re.findall(r"(/etc/\S+)\s+\[modified\]", res.stdout))
+    owned = {line.split(" ", 1)[1] for line in run("pacman", "-Ql").stdout.splitlines() if " " in line}
+    found = run("sudo", "find", "/etc", "-xdev", "-type", "f", "-newer",
+                "/var/lib/pacman/local/ALPM_DB_VERSION").stdout.split()
+    out |= {f for f in found if f not in owned}
+    return sorted(Path(f) for f in out if not ETC_SKIP.search(f) and not BACKUP.search(f) and not f.endswith("~"))
+
+
+def config_files():
+    home = [p for p in walk(HOME_PATHS) if not BACKUP.search(p.name) and not p.name.endswith(".pyc")]
+    return home + LOCALE_FILES, etc_files(), [p for p in EFI_FILES if sudo_read(p) is not None]
+
+
+def backups():
+    found = [p for p in walk(HOME_PATHS) if BACKUP.search(p.name)]
+    res = run("sudo", "find", "/etc", "/efi", "-xdev", "-type", "f", "-regextype", "posix-extended",
+              "-regex", r".*(\.bak(-zen[0-9]*)?|\.back|\.orig)$")
+    found += [Path(f) for f in res.stdout.split()]
+    return sorted(set(found))
+
+
+def leftovers():
+    out = []
+    for pattern in LEFTOVER_GLOBS:
+        out += [p for p in HOME.glob(pattern) if p.exists()]
+    old_module = CONF / "theme/zen-module.c"
+    if old_module.exists() and (DATA / "zen/src/zen-module.c").exists():
+        out.append(old_module)
+    old_state = CONF / "theme/displays.json"
+    if old_state.exists() and (CONF / "zen/displays.json").exists():
+        out.append(old_state)
+    old_pins = CONF / "theme/clip-pins"
+    if old_pins.exists() and (CONF / "zen/clip-pins").exists():
+        out.append(old_pins)
+    return sorted(out)
+
+
+# --- removing Russian comments -------------------------------------------
+
+def kind(path, text):
+    name = path.name
+    first = text.split("\n", 1)[0]
+    if name.endswith(".py") or ("python" in first and first.startswith("#!")):
+        return "py"
+    if name.endswith((".css", ".rasi")):
+        return "css"
+    if name.endswith((".kdl", ".jsonc", ".json", ".c", ".h")):
+        return "slash"
+    if name.endswith(".lua"):
+        return "lua"
+    if name.endswith((".svg", ".mo", ".png", ".kvconfig")) and "#" not in text:
+        return None
+    return "hash"
+
+
+def strip_py(text):
+    lines = text.splitlines(keepends=True)
+    cut, drop = {}, set()
+    try:
+        tree = ast.parse(text)
+        tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (SyntaxError, tokenize.TokenError):
+        return text
+    for tok in tokens:
+        if tok.type == tokenize.COMMENT and CYR.search(tok.string):
+            cut[tok.start[0] - 1] = tok.start[1]
+    uses_doc = "__doc__" in text
+    for node in [tree, *ast.walk(tree)]:
+        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        body = node.body
+        if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) \
+                and isinstance(body[0].value.value, str) and CYR.search(body[0].value.value):
+            if isinstance(node, ast.Module) and uses_doc:
+                continue
+            if len(body) == 1:
+                continue
+            drop.update(range(body[0].lineno - 1, body[0].end_lineno))
+    out = []
+    for i, line in enumerate(lines):
+        if i in drop:
+            continue
+        if i in cut:
+            kept = line[:cut[i]].rstrip()
+            if not kept:
+                continue
+            line = kept + "\n"
+        out.append(line)
+    return "".join(out)
+
+
+def outside_string(line, pos):
+    return line[:pos].count('"') % 2 == 0 and line[:pos].count("'") % 2 == 0
+
+
+def strip_lines(text, markers):
+    out = []
+    for line in text.splitlines(keepends=True):
+        s = line.lstrip()
+        if any(s.startswith(m) for m in markers) and CYR.search(s):
+            continue
+        for m in markers:
+            pos = line.find(" " + m + " ")
+            if pos > 0 and line[:pos].strip() and outside_string(line, pos) and CYR.search(line[pos:]):
+                line = line[:pos].rstrip() + "\n"
+                break
+        out.append(line)
+    return "".join(out)
+
+
+def strip_css(text):
+    return re.sub(r"[ \t]*/\*.*?\*/[ \t]*\n?", lambda m: "" if CYR.search(m.group(0)) else m.group(0),
+                  text, flags=re.S)
+
+
+def strip_slash(text):
+    text = re.sub(r"[ \t]*/\*.*?\*/[ \t]*\n?", lambda m: "" if CYR.search(m.group(0)) else m.group(0),
+                  text, flags=re.S)
+    return strip_lines(text, ("//",))
+
+
+def cleaned(path, text):
+    k = kind(path, text)
+    if k is None:
+        return text
+    if k == "py":
+        new = strip_py(text)
+    elif k == "css":
+        new = strip_css(text)
+        if path.suffix == ".rasi":
+            new = strip_lines(new, ("//",))
+    elif k == "slash":
+        new = strip_slash(text)
+    elif k == "lua":
+        new = strip_lines(text, ("--",))
+    else:
+        new = strip_lines(text, ("#", ";"))
+    if new != text:
+        new = re.sub(r"\n{4,}", "\n\n\n", new) if k == "py" else re.sub(r"\n{3,}", "\n\n", new)
+        if text.endswith("\n") and not new.endswith("\n"):
+            new += "\n"
+    return new
+
+
+def changes():
+    home, etc, efi = config_files()
+    out = []
+    for p in home + etc + efi:
+        text = sudo_read(p)
+        if text is None or "\0" in text[:4096]:
+            continue
+        new = cleaned(p, text)
+        if new != text:
+            out.append((p, text, new))
+    return out
+
+
+# --- commands --------------------------------------------------------------
+
+def plan():
+    edits = changes()
+    print("== Russian comments to remove ==")
+    for p, old, new in edits:
+        sys.stdout.writelines(difflib.unified_diff(old.splitlines(True), new.splitlines(True),
+                                                   str(p), str(p), n=1))
+    print("\n== Backups to delete ==")
+    for p in backups():
+        print(p)
+    print("\n== Leftovers to delete ==")
+    for p in leftovers():
+        print(p)
+    home, etc, efi = config_files()
+    print(f"\n== To collect: {len(home)} home files, {len(etc)} in /etc, {len(efi)} on /efi ==")
+    for p in etc + efi:
+        print(p)
+
+
+def clean():
+    edits = changes()
+    doomed = backups() + leftovers()
+    if not edits and not doomed:
+        print("nothing to clean")
+        return 0
+    archive = HOME / f"zen-originals-{STAMP}.tar.gz"
+    listing = "\n".join(str(p) for p in [e[0] for e in edits] + doomed) + "\n"
+    res = subprocess.run(["sudo", "tar", "-czf", str(archive), "--absolute-names", "-T", "-"],
+                         input=listing.encode())
+    if res.returncode != 0:
+        print("could not archive the originals — nothing changed", file=sys.stderr)
+        return 1
+    subprocess.run(["sudo", "chown", f"{os.getuid()}:{os.getgid()}", str(archive)])
+    for p, _old, new in edits:
+        sudo_write(p, new)
+        print("cleaned", p)
+    for p in doomed:
+        sudo_remove(p)
+        print("deleted", p)
+    print(f"\noriginals: {archive}")
+    print(f"restore:   sudo tar -xzf {archive} --absolute-names")
+    return 0
+
+
+DEPLOY = r'''#!/bin/sh
+# deploy.sh — put this configuration onto a fresh Arch install.
+#   sh deploy.sh            packages, home files, /etc and /efi files, services
+# Files that already exist are copied to ~/zen-deploy-backup-<date>/ first.
+set -e
+cd "$(dirname "$0")"
+B="$HOME/zen-deploy-backup-$(date +%Y%m%d-%H%M%S)"
+
+sudo pacman -S --needed - < packages.txt
+[ -s aur.txt ] && echo "AUR packages to install by hand: $(tr '\n' ' ' < aur.txt)"
+
+copy() {
+	src=$1 dst=$2 sudo=$3
+	if [ -e "$dst" ] && ! cmp -s "$src" "$dst"; then
+		mkdir -p "$B$(dirname "$dst")"
+		$sudo cp -p "$dst" "$B$dst"
+	fi
+	$sudo install -D -m "$(stat -c %a "$src")" "$src" "$dst"
+}
+
+(cd home && find . -type f) | while read -r f; do copy "home/$f" "$HOME/${f#./}" ""; done
+(cd etc && find . -type f) | while read -r f; do
+	case "$f" in
+		./kernel/cmdline) echo "skipped /etc/kernel/cmdline: it names this machine's disks; edit it by hand" ;;
+		*) copy "etc/$f" "/etc/${f#./}" sudo ;;
+	esac
+done
+[ -f efi/limine.conf ] && copy efi/limine.conf /efi/limine.conf sudo
+
+systemctl --user daemon-reload
+xargs -r systemctl --user enable < user-services.txt || true
+xargs -r sudo systemctl enable < system-services.txt || true
+command -v zen-palette >/dev/null && zen-palette >/dev/null
+[ -x "$HOME/.local/bin/zen-module-build" ] && "$HOME/.local/bin/zen-module-build" || true
+echo "done; replaced files are in $B (if any)"
+'''
+
+
+def collect():
+    target = HOME / "zen-config"
+    if target.exists():
+        target = HOME / f"zen-config-{STAMP}"
+    home, etc, efi = config_files()
+    for p in home:
+        dst = target / "home" / p.relative_to(HOME)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(p, dst)
+    for p in etc:
+        dst = target / "etc" / p.relative_to("/etc")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        text = sudo_read(p)
+        if text is not None:
+            dst.write_text(text)
+    for p in efi:
+        (target / "efi").mkdir(parents=True, exist_ok=True)
+        (target / "efi" / p.name).write_text(sudo_read(p) or "")
+    (target / "packages.txt").write_text(run("pacman", "-Qqen").stdout)
+    (target / "aur.txt").write_text(run("pacman", "-Qqem").stdout)
+    user = run("systemctl", "--user", "list-unit-files", "--state=enabled", "--no-legend").stdout
+    system = run("systemctl", "list-unit-files", "--state=enabled", "--no-legend").stdout
+    (target / "user-services.txt").write_text("".join(l.split()[0] + "\n" for l in user.splitlines() if l.strip()))
+    (target / "system-services.txt").write_text("".join(l.split()[0] + "\n" for l in system.splitlines() if l.strip()))
+    (target / "deploy.sh").write_text(DEPLOY)
+    (target / "deploy.sh").chmod(0o755)
+    print(target)
+    return 0
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "plan":
+        return plan()
+    if cmd == "clean":
+        return clean()
+    if cmd == "collect":
+        return collect()
+    sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

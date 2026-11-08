@@ -1,0 +1,12 @@
+# ASUS Zenbook UM3406KA: AMD CPU, Btrfs snapshots, personal tools.
+amd-ucode
+sof-firmware
+snapper
+snap-pac
+android-tools
+cmatrix
+cups
+devtools
+gtk3-demos
+gtk4-demos
+kirigami-gallery

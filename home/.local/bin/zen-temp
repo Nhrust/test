@@ -1,0 +1,14 @@
+#!/bin/sh
+# zen-temp — Waybar module: average temperature of the CPU, GPU and NVMe sensors.
+sum=0; n=0
+for h in /sys/class/hwmon/hwmon*; do
+	case "$(cat "$h/name" 2>/dev/null)" in
+		k10temp|zenpower|coretemp|cpu_thermal|amdgpu|radeon|nouveau|xe|i915|nvme)
+			t=$(cat "$h/temp1_input" 2>/dev/null) || continue
+			sum=$((sum + t)); n=$((n + 1)) ;;
+	esac
+done
+if [ "$n" -eq 0 ] && [ -r /sys/class/thermal/thermal_zone0/temp ]; then
+	sum=$(cat /sys/class/thermal/thermal_zone0/temp); n=1
+fi
+[ "$n" -gt 0 ] && printf "%3d°C\n" "$((sum / n / 1000))"

@@ -1,0 +1,33 @@
+#!/bin/sh
+# zen-net — network state: Offline / WIFI / LAN / LAN+WIFI; "icon" — Nerd Font icons.
+d=$(nmcli -t -f TYPE,STATE device 2>/dev/null)
+l=; w=
+echo "$d" | grep -q '^ethernet:connected' && l=1
+echo "$d" | grep -q '^wifi:connected' && w=1
+
+if [ "$1" = icon ]; then
+	LAN=$(printf '\363\260\210\200')
+	OFF=$(printf '\363\260\244\256')
+	WIFI=
+	if [ -n "$w" ]; then
+		sig=$(nmcli -t -f ACTIVE,SIGNAL device wifi list --rescan no 2>/dev/null | sed -n 's/^yes://p' | head -n1)
+		sig=${sig:-0}
+		if   [ "$sig" -ge 75 ]; then WIFI=$(printf '\363\260\244\250')
+		elif [ "$sig" -ge 50 ]; then WIFI=$(printf '\363\260\244\245')
+		elif [ "$sig" -ge 25 ]; then WIFI=$(printf '\363\260\244\242')
+		else                         WIFI=$(printf '\363\260\244\237')
+		fi
+	fi
+	if [ -n "$l" ] && [ -n "$w" ]; then echo "$LAN  $WIFI"
+	elif [ -n "$l" ]; then echo "$LAN"
+	elif [ -n "$w" ]; then echo "$WIFI"
+	else echo "$OFF"
+	fi
+	exit 0
+fi
+
+if [ -n "$l" ] && [ -n "$w" ]; then echo "LAN+WIFI"
+elif [ -n "$l" ]; then echo "LAN"
+elif [ -n "$w" ]; then echo "WIFI"
+else echo "Offline"
+fi

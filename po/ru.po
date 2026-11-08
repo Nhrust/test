@@ -1,0 +1,396 @@
+# Russian translation of the zen scripts.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "empty response"
+msgstr "пустой ответ"
+
+msgid "Weather"
+msgstr "Погода"
+
+msgid "loading…"
+msgstr "загружается…"
+
+msgid "no weather"
+msgstr "нет погоды"
+
+msgid "m/s"
+msgstr "м/с"
+
+msgid "mph"
+msgstr "миль/ч"
+
+msgid "feels like"
+msgstr "ощущается"
+
+msgid "mm"
+msgstr "мм"
+
+msgid "in"
+msgstr "дюйм"
+
+msgid "Wk"
+msgstr "нд"
+
+msgid "Do not disturb"
+msgstr "Не беспокоить"
+
+msgid "mako did not switch the mode"
+msgstr "mako не переключил режим"
+
+msgid "on"
+msgstr "вкл"
+
+msgid "off"
+msgstr "выкл"
+
+msgid "Clear all? Press again"
+msgstr "Очистить всё? Нажми ещё раз"
+
+msgid "Clear all"
+msgstr "Очистить всё"
+
+msgid "No notifications"
+msgstr "Уведомлений нет"
+
+msgid "summary"
+msgstr "сводка"
+
+msgid "Notifications"
+msgstr "Уведомления"
+
+msgid "clear"
+msgstr "ясно"
+
+msgid "partly cloudy"
+msgstr "переменная облачность"
+
+msgid "cloudy"
+msgstr "облачно"
+
+msgid "overcast"
+msgstr "пасмурно"
+
+msgid "mist"
+msgstr "дымка"
+
+msgid "patchy rain"
+msgstr "местами дождь"
+
+msgid "patchy snow"
+msgstr "местами снег"
+
+msgid "patchy sleet"
+msgstr "местами мокрый снег"
+
+msgid "patchy freezing drizzle"
+msgstr "местами ледяная морось"
+
+msgid "thundery outbreaks"
+msgstr "местами грозы"
+
+msgid "blowing snow"
+msgstr "позёмок"
+
+msgid "blizzard"
+msgstr "метель"
+
+msgid "fog"
+msgstr "туман"
+
+msgid "freezing fog"
+msgstr "ледяной туман"
+
+msgid "patchy light drizzle"
+msgstr "местами слабая морось"
+
+msgid "light drizzle"
+msgstr "слабая морось"
+
+msgid "freezing drizzle"
+msgstr "ледяная морось"
+
+msgid "heavy freezing drizzle"
+msgstr "сильная ледяная морось"
+
+msgid "patchy light rain"
+msgstr "местами небольшой дождь"
+
+msgid "light rain"
+msgstr "небольшой дождь"
+
+msgid "moderate rain at times"
+msgstr "временами дождь"
+
+msgid "moderate rain"
+msgstr "дождь"
+
+msgid "heavy rain at times"
+msgstr "временами сильный дождь"
+
+msgid "heavy rain"
+msgstr "сильный дождь"
+
+msgid "light freezing rain"
+msgstr "слабый ледяной дождь"
+
+msgid "heavy freezing rain"
+msgstr "ледяной дождь"
+
+msgid "light sleet"
+msgstr "слабый мокрый снег"
+
+msgid "heavy sleet"
+msgstr "мокрый снег"
+
+msgid "patchy light snow"
+msgstr "местами небольшой снег"
+
+msgid "light snow"
+msgstr "небольшой снег"
+
+msgid "patchy moderate snow"
+msgstr "местами снег"
+
+msgid "moderate snow"
+msgstr "снег"
+
+msgid "patchy heavy snow"
+msgstr "местами сильный снег"
+
+msgid "heavy snow"
+msgstr "сильный снег"
+
+msgid "ice pellets"
+msgstr "ледяная крупа"
+
+msgid "light rain shower"
+msgstr "небольшой ливень"
+
+msgid "heavy rain shower"
+msgstr "ливень"
+
+msgid "torrential rain shower"
+msgstr "сильный ливень"
+
+msgid "light sleet showers"
+msgstr "небольшой мокрый снег"
+
+msgid "heavy sleet showers"
+msgstr "мокрый снег"
+
+msgid "light snow showers"
+msgstr "небольшой снегопад"
+
+msgid "heavy snow showers"
+msgstr "снегопад"
+
+msgid "light ice pellet showers"
+msgstr "небольшая ледяная крупа"
+
+msgid "heavy ice pellet showers"
+msgstr "ледяная крупа"
+
+msgid "light rain with thunder"
+msgstr "небольшой дождь с грозой"
+
+msgid "heavy rain with thunder"
+msgstr "дождь с грозой"
+
+msgid "light snow with thunder"
+msgstr "небольшой снег с грозой"
+
+msgid "heavy snow with thunder"
+msgstr "снег с грозой"
+
+msgid "Above"
+msgstr "Сверху"
+
+msgid "Alignment"
+msgstr "Выравнивание"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "Below"
+msgstr "Снизу"
+
+msgid "Brightness"
+msgstr "Яркость"
+
+msgid "Caffeine"
+msgstr "Кофеин"
+
+msgid "Could not switch"
+msgstr "Не удалось переключить"
+
+msgid "Hz"
+msgstr "Гц"
+
+msgid "Layouts"
+msgstr "Готовые раскладки"
+
+msgid "Left"
+msgstr "Слева"
+
+msgid "Mirroring"
+msgstr "Дублирование"
+
+msgid "Only {}"
+msgstr "Только {}"
+
+msgid "Position"
+msgstr "Положение"
+
+msgid "Relative to"
+msgstr "Относительно"
+
+msgid "Resolution and refresh rate"
+msgstr "Разрешение и частота"
+
+msgid "Right"
+msgstr "Справа"
+
+msgid "Scale"
+msgstr "Масштаб"
+
+msgid "Screen"
+msgstr "Экран"
+
+msgid "The monitor does not answer over DDC/CI — use its buttons"
+msgstr "Монитор не отвечает по DDC/CI — яркость только его кнопками"
+
+msgid "above {}"
+msgstr "над {}"
+
+msgid "below {}"
+msgstr "под {}"
+
+msgid "brightness"
+msgstr "яркость"
+
+msgid "centered"
+msgstr "по центру"
+
+msgid "displays"
+msgstr "экран"
+
+msgid "edge"
+msgstr "по краю"
+
+msgid "extended"
+msgstr "расширение"
+
+msgid "layouts"
+msgstr "готовые раскладки"
+
+msgid "left of {}"
+msgstr "слева от {}"
+
+msgid "mirror"
+msgstr "копия"
+
+msgid "native"
+msgstr "родное"
+
+msgid "placed relative to this one"
+msgstr "стоит относительно этого монитора"
+
+msgid "position"
+msgstr "положение"
+
+msgid "primary"
+msgstr "основной"
+
+msgid "relative to"
+msgstr "относительно"
+
+msgid "resolution and refresh rate"
+msgstr "разрешение и частота"
+
+msgid "right of {}"
+msgstr "справа от {}"
+
+msgid "scale"
+msgstr "масштаб"
+
+msgid "wl-mirror is not installed"
+msgstr "Не установлен wl-mirror"
+
+msgid "{} off"
+msgstr "{} выключен"
+
+msgid "Power saver"
+msgstr "Экономия"
+
+msgid "Balanced"
+msgstr "Баланс"
+
+msgid "Performance"
+msgstr "Мощность"
+
+msgid "Hibernate"
+msgstr "Гибернация"
+
+msgid "Reboot"
+msgstr "Перезагрузка"
+
+msgid "Power off"
+msgstr "Выключить"
+
+msgid "Log out"
+msgstr "Выход"
+
+msgid "Press again"
+msgstr "Нажми ещё раз"
+
+msgid "Charge to {}%"
+msgstr "Заряд до {}%"
+
+msgid "Battery care"
+msgstr "Бережный заряд"
+
+msgid "Could not change it"
+msgstr "Не удалось изменить"
+
+msgid "Power profile"
+msgstr "Профиль питания"
+
+msgid "Charge limit"
+msgstr "Ограничение зарядки"
+
+msgid "power"
+msgstr "питание"
+
+msgid "Clear the history? Press again"
+msgstr "Очистить историю? Нажми ещё раз"
+
+msgid "Image {} {} {}"
+msgstr "Изображение {} {} {}"
+
+msgid "Image {}"
+msgstr "Изображение {}"
+
+msgid "The clipboard is empty"
+msgstr "Буфер обмена пуст"
+
+msgid "Search the clipboard…"
+msgstr "Поиск в буфере обмена…"
+
+msgid "Clear"
+msgstr "Очистить"
+
+msgid "Battery is critically low"
+msgstr "Батарея почти разряжена"
+
+msgid "Connect the charger."
+msgstr "Подключи зарядку."
+
+msgid "zen-module is disabled"
+msgstr "zen-module отключён"
+
+msgid "Built for gtklock %s, installed %s. Rebuild it: zen-module-build"
+msgstr "Собран для gtklock %s, установлен %s. Пересобери: zen-module-build"

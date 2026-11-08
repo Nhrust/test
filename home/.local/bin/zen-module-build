@@ -1,0 +1,25 @@
+#!/bin/sh
+# zen-module-build — build zen-module for the installed gtklock.
+set -eu
+. "${XDG_DATA_HOME:-$HOME/.local/share}/zen/sh/zen.sh"
+
+SRC="${XDG_DATA_HOME:-$HOME/.local/share}/zen/src/zen-module.c"
+OUT="$HOME/.local/lib/gtklock"
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+
+ver=$(gtklock -v | sed -n 's/^gtklock v\([0-9]*\)\.\([0-9]*\)\..*/\1 \2/p')
+major=${ver% *}
+minor=${ver#* }
+pb=$(pacman -Q gtklock-powerbar-module | awk '{print $2}' | sed 's/-[0-9]*$//')
+
+echo "gtklock $major.$minor, gtklock-powerbar-module v$pb"
+curl -fsSL -o "$TMP/gtklock-module.h" \
+  "https://raw.githubusercontent.com/jovanlanik/gtklock-powerbar-module/v$pb/gtklock-module.h"
+
+mkdir -p "$OUT"
+gcc -shared -fPIC -DZEN_MAJOR="$major" -DZEN_MINOR="$minor" -I"$TMP" \
+  -o "$OUT/zen-module.so.new" "$SRC" $(pkg-config --cflags --libs gtk+-3.0)
+mv "$OUT/zen-module.so.new" "$OUT/zen-module.so"
+echo "$major" > "$OUT/zen-module.built"
+echo "$OUT/zen-module.so (gtklock $major)"

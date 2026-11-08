@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""zen-lang — Waybar module: short name of the active keyboard layout (EN, RU, DE…).
+
+Follows the Niri event stream; the short name is the XKB layout code from the
+XKB rules registry (evdev.xml), looked up by the layout description Niri reports.
+"""
+import json
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+
+RULES = ["/usr/share/X11/xkb/rules/evdev.xml", "/usr/share/xkeyboard-config-2/rules/evdev.xml"]
+
+
+def registry():
+    codes = {}
+    for path in RULES:
+        try:
+            root = ET.parse(path).getroot()
+        except (OSError, ET.ParseError):
+            continue
+        for layout in root.iter("layout"):
+            item = layout.find("configItem")
+            code = item.findtext("shortDescription") or item.findtext("name") or ""
+            codes[item.findtext("description") or ""] = code
+            for variant in layout.iter("variant"):
+                desc = variant.find("configItem").findtext("description") or ""
+                codes[desc] = variant.find("configItem").findtext("shortDescription") or code
+        break
+    return codes
+
+
+CODES = registry()
+names = []
+
+
+def show(idx):
+    name = names[idx] if 0 <= idx < len(names) else "?"
+    print((CODES.get(name) or name[:2]).upper()[:3], flush=True)
+
+
+proc = subprocess.Popen(["niri", "msg", "--json", "event-stream"], stdout=subprocess.PIPE, text=True)
+for line in proc.stdout:
+    try:
+        event = json.loads(line)
+    except ValueError:
+        continue
+    if "KeyboardLayoutsChanged" in event:
+        layouts = event["KeyboardLayoutsChanged"]["keyboard_layouts"]
+        names = layouts["names"]
+        show(layouts["current_idx"])
+    elif "KeyboardLayoutSwitched" in event:
+        show(event["KeyboardLayoutSwitched"]["idx"])
+sys.exit(proc.wait())

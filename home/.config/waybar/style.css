@@ -1,0 +1,163 @@
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 10pt;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+window#waybar {
+    background-color: #000000;
+    color: #dedede;
+}
+
+#workspaces {
+    padding: 0 10px;
+}
+
+#workspaces button {
+    margin: 8px 3px;
+    padding: 0;
+    min-width: 6px;
+    min-height: 0;
+    border: 1px solid #555555;
+    border-radius: 4px;
+    background-color: transparent;
+    background-image: none;
+    transition: all 150ms ease-out;
+}
+
+#workspaces button label {
+    font-size: 1px;
+    min-height: 0;
+    padding: 0;
+}
+
+#workspaces button.focused {
+    min-width: 18px;
+    border-color: #bdb3fa;
+    background-color: #bdb3fa;
+}
+
+#workspaces button.urgent {
+    border-color: #f3a3bb;
+}
+
+#workspaces button:hover {
+    border-color: #bebebe;
+}
+
+#cpu,
+#custom-gpu,
+#memory,
+#custom-temp,
+#custom-speed {
+    padding: 0 10px;
+    color: #dedede;
+}
+
+#custom-gpu,
+#memory,
+#custom-temp,
+#custom-speed {
+    border-left: 1px solid #555555;
+}
+
+#custom-gap-l1,
+#custom-gap-l2,
+#custom-gap-r1,
+#custom-gap-r2 {
+    padding: 0;
+    color: transparent;
+}
+
+#custom-date,
+#custom-weather {
+    padding: 0 8px;
+    color: #dedede;
+}
+
+#tray,
+#custom-net,
+#custom-lang,
+#wireplumber,
+#battery {
+    padding: 0 10px;
+    color: #dedede;
+}
+
+#custom-net {
+    padding-right: 14px;
+}
+
+#custom-lang,
+#wireplumber,
+#battery {
+    border-left: 1px solid #555555;
+}
+
+#battery.charging {
+    color: #bdb3fa;
+}
+
+#battery.warning:not(.charging) {
+    color: #69cee6;
+}
+
+#battery.critical:not(.charging) {
+    color: #f3a3bb;
+}
+
+#wireplumber.muted {
+    color: #555555;
+}
+
+#tray > .needs-attention {
+    color: #f3a3bb;
+}
+
+#backlight {
+    padding: 0 10px;
+    color: #dedede;
+    border-left: 1px solid #555555;
+}
+
+#power {
+    border-left: 1px solid #555555;
+}
+#power #battery {
+    border-left: none;
+}
+#custom-profile {
+    padding: 0 4px 0 10px;    color: #dedede;
+}
+
+#custom-powerbtn {
+    padding: 0 10px 0 0;
+    color: #dedede;
+}
+
+#light,
+#sound {
+    border-left: 1px solid #555555;
+}
+#light #backlight,
+#sound #wireplumber {
+    padding: 0 10px 0 5px;
+    border-left: none;
+}
+#image.brightness,
+#image.volume {
+    padding-left: 10px;
+}
+
+#custom-caffeine {
+    padding: 0 10px 0 0;
+    color: #dedede;
+}
+
+#custom-dnd {
+    padding: 0 10px 0 0;
+    color: #dedede;
+}

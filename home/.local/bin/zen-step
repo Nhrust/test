@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""zen-step — volume and brightness in even steps of 5%.
+
+  zen-step volume up|down
+  zen-step brightness up|down
+"""
+import re
+import subprocess
+import sys
+
+STEP = 5
+MIN_BRIGHTNESS = 5
+
+
+def step(cur, direction, low=0, high=100):
+    if direction == "up":
+        new = (cur // STEP + 1) * STEP
+    else:
+        new = (-(-cur // STEP) - 1) * STEP
+    return max(low, min(high, new))
+
+
+def volume(direction):
+    out = subprocess.run(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"],
+                         capture_output=True, text=True).stdout
+    m = re.search(r"([\d.]+)", out)
+    if not m:
+        return 1
+    new = step(round(float(m.group(1)) * 100), direction)
+    subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{new / 100:.2f}"])
+    return 0
+
+
+def brightness(direction):
+    out = subprocess.run(["brightnessctl", "--class=backlight", "-m"],
+                         capture_output=True, text=True).stdout.split(",")
+    if len(out) < 4:
+        return 1
+    new = step(int(out[3].rstrip("%")), direction, low=MIN_BRIGHTNESS)
+    subprocess.run(["brightnessctl", "--class=backlight", "set", f"{new}%"],
+                   stdout=subprocess.DEVNULL)
+    return 0
+
+
+def main():
+    if len(sys.argv) != 3 or sys.argv[2] not in ("up", "down"):
+        sys.exit(__doc__)
+    what = {"volume": volume, "brightness": brightness}.get(sys.argv[1])
+    if not what:
+        sys.exit(__doc__)
+    return what(sys.argv[2])
+
+
+if __name__ == "__main__":
+    sys.exit(main())

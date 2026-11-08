@@ -1,0 +1,10 @@
+[Unit]
+Description=Zen caffeine: no idle lock or screen-off
+Conflicts=swayidle.service
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/swayidle -w before-sleep '%h/.local/bin/zen-lock' lock '%h/.local/bin/zen-lock'
+Restart=on-failure

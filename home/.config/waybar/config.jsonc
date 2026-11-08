@@ -1,0 +1,247 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 24,
+    "spacing": 0,
+    "expand-left": true,
+    "expand-right": true,
+    "modules-left": [
+        "niri/workspaces",
+        "custom/gap-l1",
+        "cpu",
+        "custom/gpu",
+        "memory",
+        "custom/temp",
+        "custom/speed",
+        "custom/gap-l2"
+    ],
+    "modules-center": [
+        "custom/date",
+        "custom/dnd",
+        "custom/weather"
+    ],
+    "modules-right": [
+        "custom/gap-r1",
+        "tray",
+        "custom/gap-r2",
+        "custom/net",
+        "custom/lang",
+        "group/light",
+        "group/sound",
+        "group/power"
+    ],
+    "niri/workspaces": {
+        "format": ""
+    },
+    "custom/gap-l1": {
+        "format": " ",
+        "interval": 86400,
+        "expand": true,
+        "tooltip": false
+    },
+    "custom/gap-l2": {
+        "format": " ",
+        "interval": 86400,
+        "expand": true,
+        "tooltip": false
+    },
+    "custom/gap-r1": {
+        "format": " ",
+        "interval": 86400,
+        "expand": true,
+        "tooltip": false
+    },
+    "custom/gap-r2": {
+        "format": " ",
+        "interval": 86400,
+        "expand": true,
+        "tooltip": false
+    },
+    "cpu": {
+        "on-click": "foot btop",
+        "format": "󰍛 {usage:>3}%",
+        "interval": 2,
+        "tooltip": false
+    },
+    "custom/gpu": {
+        "exec": "~/.local/bin/zen-gpu",
+        "on-click": "foot btop",
+        "tooltip": false
+    },
+    "memory": {
+        "on-click": "foot btop",
+        "format": " {used:>4.1f}G",
+        "interval": 5,
+        "tooltip": false
+    },
+    "custom/temp": {
+        "exec": "~/.local/bin/zen-temp",
+        "on-click": "foot btop",
+        "interval": 5,
+        "tooltip": false,
+        "format": "󰔏 {}"
+    },
+    "custom/speed": {
+        "exec": "~/.local/bin/zen-speed",
+        "on-click": "foot btop",
+        "format": "󰓢 {}",
+        "tooltip": false
+    },
+    "custom/date": {
+        "on-click": "~/.local/bin/zen-summary",
+        "exec": "date '+%a %-d %b  %H:%M:%S' | sed -E 's/^(\\S+ \\S+ )(\\S+)/\\1\\L\\2/'",
+        "interval": 1,
+        "tooltip": false
+    },
+    "custom/weather": {
+        "exec": "~/.local/bin/zen-weather",
+        "on-click": "~/.local/bin/zen-summary",
+        "interval": 900,
+        "tooltip": false
+    },
+    "custom/dnd": {
+        "exec": "~/.local/bin/zen-summary dnd",
+        "signal": 11,
+        "interval": 10,
+        "on-click": "~/.local/bin/zen-summary",
+        "tooltip": false
+    },
+    "tray": {
+        "icon-size": 16,
+        "spacing": 8
+    },
+    "custom/net": {
+        "exec": "~/.local/bin/zen-net icon",
+        "interval": 5,
+        "tooltip": false
+    },
+    "custom/lang": {
+        "exec": "~/.local/bin/zen-lang",
+        "on-click": "niri msg action switch-layout next",
+        "restart-interval": 2,
+        "tooltip": false
+    },
+    "wireplumber": {
+        "format": "{volume:>3}%",
+        "format-muted": "{volume:>3}%",
+        "on-update": "pkill -RTMIN+8 -x waybar",
+        "reverse-scrolling": true,
+        "on-scroll-up": "~/.local/bin/zen-step volume up",
+        "on-scroll-down": "~/.local/bin/zen-step volume down",
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "tooltip": false,
+        "format-icons": [
+            "󰕿",
+            "󰖀",
+            "󰕾"
+        ]
+    },
+    "backlight": {
+        "format": "{percent:>3}%",
+        "on-update": "pkill -RTMIN+9 -x waybar",
+        "on-click": "~/.local/bin/zen-display",
+        "on-scroll-up": "~/.local/bin/zen-step brightness up",
+        "on-scroll-down": "~/.local/bin/zen-step brightness down",
+        "reverse-scrolling": true,
+        "tooltip": false
+    },
+    "group/light": {
+        "orientation": "horizontal",
+        "modules": [
+            "image#brightness",
+            "backlight",
+            "custom/caffeine"
+        ]
+    },
+    "group/sound": {
+        "orientation": "horizontal",
+        "modules": [
+            "image#volume",
+            "wireplumber"
+        ]
+    },
+    "custom/caffeine": {
+        "exec": "~/.local/bin/zen-display caffeine",
+        "signal": 10,
+        "interval": 30,
+        "on-click": "~/.local/bin/zen-display",
+        "tooltip": false
+    },
+    "image#brightness": {
+        "exec": "~/.local/bin/zen-level-icon brightness",
+        "on-click": "~/.local/bin/zen-display",
+        "size": 14,
+        "signal": 9,
+        "interval": 30,
+        "on-scroll-up": "~/.local/bin/zen-step brightness up",
+        "on-scroll-down": "~/.local/bin/zen-step brightness down",
+        "reverse-scrolling": true,
+        "tooltip": false
+    },
+    "image#volume": {
+        "exec": "~/.local/bin/zen-level-icon volume",
+        "size": 14,
+        "signal": 8,
+        "interval": 30,
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-scroll-up": "~/.local/bin/zen-step volume up",
+        "on-scroll-down": "~/.local/bin/zen-step volume down",
+        "reverse-scrolling": true,
+        "tooltip": false
+    },
+    "group/power": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/profile",
+            "battery",
+            "custom/powerbtn"
+        ]
+    },
+    "custom/powerbtn": {
+        "format": "󰐥",
+        "on-click": "~/.local/bin/zen-power",
+        "on-click-right": "~/.local/bin/zen-profile next",
+        "on-scroll-up": "~/.local/bin/zen-profile up",
+        "on-scroll-down": "~/.local/bin/zen-profile down",
+        "reverse-scrolling": true,
+        "tooltip": false
+    },
+    "custom/profile": {
+        "exec": "~/.local/bin/zen-profile",
+        "on-click": "~/.local/bin/zen-power",
+        "on-click-right": "~/.local/bin/zen-profile next",
+        "on-scroll-up": "~/.local/bin/zen-profile up",
+        "on-scroll-down": "~/.local/bin/zen-profile down",
+        "reverse-scrolling": true,
+        "tooltip": false
+    },
+    "battery": {
+        "bat": "BAT0",
+        "on-click": "~/.local/bin/zen-power",
+        "on-click-right": "~/.local/bin/zen-profile next",
+        "on-scroll-up": "~/.local/bin/zen-profile up",
+        "on-scroll-down": "~/.local/bin/zen-profile down",
+        "reverse-scrolling": true,
+        "interval": 30,
+        "states": {
+            "warning": 20,
+            "critical": 10
+        },
+        "format": "{icon} {capacity:>3}%",
+        "format-charging": "󰂄 {capacity:>3}%",
+        "tooltip": false,
+        "format-icons": [
+            "󰂎",
+            "󰁺",
+            "󰁻",
+            "󰁼",
+            "󰁽",
+            "󰁾",
+            "󰁿",
+            "󰂀",
+            "󰂁",
+            "󰂂",
+            "󰁹"
+        ]
+    }
+}

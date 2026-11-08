@@ -1,0 +1,54 @@
+@import "zen.rasi"
+
+mainbox {
+    children: [ listview ];
+}
+
+listview {
+    columns: 4;
+    lines: 2;
+    spacing: 8px;
+    fixed-columns: true;
+    flow: horizontal;
+}
+
+element {
+    orientation: vertical;
+    children: [ element-icon, element-text ];
+    spacing: 12px;
+    padding: 30px 4px;
+    border: 1px;
+    border-color: @zen-line;
+}
+element-icon {
+    size: 48px;
+}
+element-text {
+    horizontal-align: 0.5;
+}
+
+element normal.normal, element alternate.normal {
+    background-color: transparent;
+    text-color: @zen-fg;
+}
+element selected.normal {
+    background-color: transparent;
+    text-color: @zen-fg;
+    border-color: @zen-accent;
+}
+
+element normal.active, element alternate.active {
+    background-color: transparent;
+    text-color: @zen-accent;
+}
+element selected.active {
+    background-color: transparent;
+    text-color: @zen-accent;
+    border-color: @zen-accent;
+}
+
+element normal.urgent, element alternate.urgent, element selected.urgent {
+    background-color: transparent;
+    text-color: @zen-error;
+    border-color: @zen-error;
+}

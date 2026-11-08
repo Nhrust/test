@@ -1,0 +1,56 @@
+@import "zen.rasi"
+
+mainbox {
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    children: [ entry, button-wipe ];
+}
+entry {
+    placeholder: "Search the clipboard…";
+    placeholder-color: @zen-line;
+}
+button-wipe {
+    expand: false;
+    content: "Clear";
+    action: "kb-custom-2";
+    padding: 0px 0px 0px 14px;
+    background-color: transparent;
+    text-color: @zen-line;
+    vertical-align: 0.5;
+    cursor: pointer;
+}
+
+element normal.active, element alternate.active {
+    background-color: transparent;
+    text-color: @zen-fg;
+    border-radius: 0px;
+    border: 0px 0px 1px 0px;
+    border-color: @zen-line;
+}
+element selected.active {
+    background-color: @zen-accent;
+    text-color: @zen-bg;
+    border: 0px 0px 1px 0px;
+    border-color: @zen-line;
+}
+
+element normal.urgent, element alternate.urgent {
+    background-color: transparent;
+    text-color: @zen-critical;
+}
+element selected.urgent {
+    background-color: @zen-critical;
+    text-color: @zen-bg;
+}
+
+element {
+    children: [ element-text, element-icon ];
+}
+element-icon {
+    size: 1.2em;
+    padding: 0px 0px 0px 14px;
+    background-color: transparent;
+    vertical-align: 0.5;
+}

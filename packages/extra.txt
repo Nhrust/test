@@ -1,0 +1,13 @@
+# Optional tools.
+7zip
+bat
+exfatprogs
+ntfs-3g
+ntfsprogs
+restic
+tailscale
+trash-cli
+unzip
+usbutils
+yazi
+zip

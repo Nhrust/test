@@ -1,0 +1,12 @@
+[Unit]
+Description=Zen: close Rofi menus when a window takes focus
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/python3 -I %h/.local/bin/zen-menu-close
+Restart=on-failure
+
+[Install]
+WantedBy=niri.service

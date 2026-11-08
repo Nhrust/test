@@ -1,0 +1,51 @@
+// Zen — fastfetch.
+//   31 #f7a692  32 #8ed09c  33 #ebb077  34 #bdb3fa  35 #f3a3bb  36 #69cee6  37 #dedede
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    "logo": {
+        "type": "small"
+    },
+    "display": {
+        "separator": "",
+        "key": {
+            "width": 13
+        }
+    },
+    "modules": [
+        {
+            "type": "title",
+            "format": "{user-name-colored}{#light_red}@{host-name-colored} {#}{cwd}"
+        },
+        {
+            "key": " shell",
+            "type": "shell",
+            "keyColor": "31"
+        },
+        {
+            "key": " kernel",
+            "type": "kernel",
+            "keyColor": "32"
+        },
+        {
+            "key": "󰏖 packages",
+            "type": "packages",
+            "keyColor": "33"
+        },
+        {
+            "key": "󰅐 uptime",
+            "type": "uptime",
+            "keyColor": "34"
+        },
+        {
+            "key": "󰁹 battery",
+            "type": "battery",
+            "keyColor": "35"
+        },
+        {
+            "key": " colors",
+            "type": "colors",
+            "symbol": "circle",
+            "keyColor": "37"
+        }
+    ]
+}

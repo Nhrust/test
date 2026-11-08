@@ -1,0 +1,82 @@
+@import "zen.rasi"
+
+mainbox {
+    orientation: vertical;
+    children: [ inputbar, body ];
+}
+inputbar {
+    children: [ textbox-title, calnav ];
+}
+textbox-title {
+    content: "Notifications";
+    text-color: @zen-muted;
+    expand: true;
+}
+body {
+    orientation: horizontal;
+    spacing: 12px;
+    children: [ listview, side ];
+}
+listview {
+    lines: 10;
+}
+
+element {
+    children: [ element-text, element-icon ];
+}
+element-icon {
+    size: 1.2em;
+    padding: 0px;
+    background-color: transparent;
+}
+
+side {
+    expand: false;
+    width: 236px;
+    padding: 0px 0px 0px 12px;
+    border: 0px 0px 0px 1px;
+    border-color: @zen-line;
+    children: [ message ];
+}
+
+calnav {
+    orientation: horizontal;
+    expand: false;
+    width: 236px;
+    padding: 0px 0px 0px 13px;
+    children: [ button-prev, gap-l, prompt, gap-r, button-next ];
+}
+gap-l, gap-r {
+    expand: true;
+}
+prompt {
+    expand: false;
+    markup: true;
+    vertical-align: 0.5;
+    font: "JetBrainsMono Nerd Font 9";
+    text-color: @zen-fg;
+}
+button-prev, button-next {
+    expand: false;
+    padding: 0px 6px;
+    text-color: @zen-muted;
+    cursor: pointer;
+}
+button-prev {
+    content: "‹";
+    action: "kb-custom-8";
+}
+button-next {
+    content: "›";
+    action: "kb-custom-9";
+}
+
+message {
+    expand: true;
+}
+textbox {
+    width: 224px;
+    horizontal-align: 0.5;
+    font: "JetBrainsMono Nerd Font 9";
+    text-color: @zen-fg;
+}

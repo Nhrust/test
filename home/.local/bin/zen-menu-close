@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""zen-menu-close — close an open Rofi menu when Niri focus moves to a window or workspace."""
+import json
+import subprocess
+import sys
+
+TRIGGERS = ("WorkspaceActiveWindowChanged", "WorkspaceActivated")
+
+
+def rofi_running():
+    return subprocess.run(["pgrep", "-x", "rofi"], stdout=subprocess.DEVNULL).returncode == 0
+
+
+def main():
+    proc = subprocess.Popen(["niri", "msg", "--json", "event-stream"],
+                            stdout=subprocess.PIPE, text=True)
+    for line in proc.stdout:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if any(k in event for k in TRIGGERS):
+            if rofi_running():
+                subprocess.run(["pkill", "-x", "rofi"])
+    return proc.wait()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

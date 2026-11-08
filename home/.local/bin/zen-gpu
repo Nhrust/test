@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+import glob
+import time
+
+INTERVAL = 2
+ICON = "\U000F08AE"
+
+
+def busy():
+    values = []
+    for path in glob.glob("/sys/class/drm/card*/device/gpu_busy_percent"):
+        try:
+            with open(path) as f:
+                values.append(int(f.read()))
+        except (OSError, ValueError):
+            pass
+    return max(values) if values else None
+
+
+while True:
+    value = busy()
+    print(f"{ICON} {value:>3}%" if value is not None else "", flush=True)
+    time.sleep(INTERVAL)

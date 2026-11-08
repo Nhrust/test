@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Update on network state changes
+case "${2:-}" in
+    up|down|reapply|connectivity-change) ;;
+    *) exit 0 ;;
+esac
+
+# Read NetworkManager state once per event
+devices=$(LC_ALL=C /usr/bin/nmcli -t -f TYPE,STATE device status 2>/dev/null) || exit 0
+
+lan=0
+wifi=0
+
+printf '%s\n' "$devices" | grep -qx 'ethernet:connected' && lan=1
+printf '%s\n' "$devices" | grep -qx 'wifi:connected' && wifi=1
+
+if [ "$lan" -eq 1 ] && [ "$wifi" -eq 1 ]; then
+    network="LAN+WiFi"
+elif [ "$lan" -eq 1 ]; then
+    network="LAN"
+elif [ "$wifi" -eq 1 ]; then
+    network="WiFi"
+else
+    network="Offline"
+fi
+
+# Do nothing if the status has not changed
+old=$(cat /run/zen-network-status 2>/dev/null)
+[ "$old" = "$network" ] && exit 0
+
+# Atomically update the cached status
+tmp=$(mktemp /run/.zen-network.XXXXXX) || exit 1
+printf '%s\n' "$network" > "$tmp"
+chmod 644 "$tmp"
+mv -f "$tmp" /run/zen-network-status
+
+# Refresh attached tmux clients of every user
+for socket in /tmp/tmux-*/default; do
+    [ -S "$socket" ] || continue
+    user=$(/usr/bin/stat -c %U "$socket") || continue
+    /usr/bin/runuser -u "$user" -- /usr/bin/tmux -S "$socket" list-clients -F '#{client_name}' 2>/dev/null |
+    while IFS= read -r client; do
+        [ -n "$client" ] || continue
+        /usr/bin/runuser -u "$user" -- /usr/bin/tmux -S "$socket" refresh-client -S -t "$client" >/dev/null 2>&1
+    done
+done

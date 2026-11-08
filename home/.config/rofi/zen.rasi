@@ -1,0 +1,86 @@
+@import "zen-colors.rasi"
+
+* {
+
+    background-color: transparent;
+    text-color:       @zen-fg;
+}
+
+window {
+    width:            600px;
+    background-color: @zen-bg;
+    border:           1px;
+    border-color:     @zen-line;
+    padding:          12px;
+}
+
+mainbox {
+    spacing: 8px;
+}
+
+inputbar {
+    children:     [ prompt, entry ];
+    spacing:      8px;
+    padding:      0 0 8px 0;
+    border:       0 0 1px 0;
+    border-color: @zen-line;
+}
+
+prompt {
+    text-color: @zen-accent;
+}
+
+entry {
+    placeholder:       "Search";
+    placeholder-color: @zen-muted;
+}
+
+listview {
+    lines:        10;
+    columns:      1;
+    spacing:      2px;
+    fixed-height: true;
+    scrollbar:    false;
+}
+
+element-icon {
+    size: 1.2em;
+}
+
+element {
+    padding: 4px 8px;
+    spacing: 8px;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color:       @zen-fg;
+}
+
+element selected.normal,
+element selected.active {
+    background-color: @zen-accent;
+    text-color:       @zen-bg;
+}
+
+element normal.active,
+element alternate.active {
+    text-color: @zen-accent;
+}
+
+element normal.urgent,
+element alternate.urgent {
+    text-color: @zen-urgent;
+}
+
+element selected.urgent {
+    background-color: @zen-urgent;
+    text-color:       @zen-bg;
+}
+
+element-text,
+element-icon {
+    background-color: inherit;
+    text-color:       inherit;
+}

@@ -1,0 +1,1 @@
+rd.luks.name=d884f683-6667-45e7-a2b3-355a74796c64=cryptlvm rd.lvm.lv=vg0/root rd.lvm.lv=vg0/swap root=/dev/vg0/root rootflags=subvol=/@ rw resume=/dev/vg0/swap quiet loglevel=3 systemd.show_status=error rd.systemd.show_status=error rd.udev.log_level=3

@@ -1,0 +1,12 @@
+[Unit]
+Description=Zen display profiles (kanshi)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/kanshi
+Restart=on-failure
+
+[Install]
+WantedBy=niri.service

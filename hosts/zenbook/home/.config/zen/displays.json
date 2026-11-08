@@ -1,0 +1,52 @@
+{
+  "Data Expert Corporation DF22N2S 0x01010111 + eDP-1": {
+    "outputs": {
+      "Data Expert Corporation DF22N2S 0x01010111": {
+        "enabled": true,
+        "mode": "1920x1080@60",
+        "scale": 1.0,
+        "rel": "eDP-1",
+        "side": "right",
+        "align": "center",
+        "brightness": null,
+        "show": "extend",
+        "pos": [
+          1536,
+          0
+        ]
+      },
+      "eDP-1": {
+        "enabled": true,
+        "mode": "1920x1200@60.003",
+        "scale": 1.25,
+        "rel": null,
+        "side": null,
+        "align": "center",
+        "brightness": null,
+        "pos": [
+          0,
+          60
+        ]
+      }
+    },
+    "preset": null
+  },
+  "eDP-1": {
+    "outputs": {
+      "eDP-1": {
+        "enabled": true,
+        "mode": "1920x1200@60.003",
+        "scale": 1.25,
+        "rel": null,
+        "side": null,
+        "align": "center",
+        "brightness": null,
+        "pos": [
+          0,
+          0
+        ]
+      }
+    },
+    "preset": null
+  }
+}
