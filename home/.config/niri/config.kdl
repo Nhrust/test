@@ -61,9 +61,6 @@ layout {
     border {
         on 
         width 2
-        active-color "#8488cb"
-        inactive-color "#2e2e2e"
-        urgent-color "#bd7598"
     }
 
     shadow {
@@ -327,3 +324,6 @@ binds {
 
     Mod+Shift+P { power-off-monitors; }
 }
+
+// Colours from ~/.config/zen/zen.conf, written by "zen apply".
+include optional=true "zen-colors.kdl"

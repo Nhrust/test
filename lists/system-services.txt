@@ -9,3 +9,4 @@ bluetooth.service
 power-profiles-daemon.service
 paccache.timer
 ly@tty2.service
+zen-console.service

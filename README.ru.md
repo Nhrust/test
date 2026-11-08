@@ -10,7 +10,8 @@
 |---|---|
 | `home/` | файлы для `$HOME`: Niri, Waybar, Rofi, mako, gtklock, foot, fish, tmux, Neovim, тема Qt/GTK, скрипты zen |
 | `etc/`, `usr/local/` | системные файлы: pacman, makepkg, logind, sleep, UPower, NetworkManager, nftables, sshd (порт 9728, вход только вашему пользователю), Ly, zram, хуки |
-| `efi/limine.conf` | меню загрузки |
+| `usr/local/share/zen/templates/` | цветовые шаблоны системных файлов: палитра консоли, меню загрузки (`efi/limine.conf`) |
+| `tools/` | для работы над темой, не устанавливается: `kvantum-svg.py` строит шаблон Kvantum |
 | `hosts/ИМЯ/` | то, что отличается между машинами: строка ядра, модули initramfs, правила железа, снимки, пакеты, город и мониторы |
 | `packages/` | списки пакетов: `base`, `desktop`, `extra` |
 | `lists/` | сервисы, которые включаются |
@@ -21,9 +22,9 @@
 
 | Путь | Что |
 |---|---|
-| `~/.local/bin/` | команды, которые запускаешь сам или по бинду: `zen-center` (уведомления, календарь, погода), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step` и служебная `zen` (`zen apply`, `zen gtklock`) |
+| `~/.local/bin/` | команды, которые запускаешь сам или по бинду: `zen-center` (уведомления, календарь, погода), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step` и служебная `zen` (`zen apply`, `zen diff`, `zen gtklock`) |
 | `~/.local/lib/zen/` | внутренности: `bar/` (модули Waybar и tmux), фоновые помощники, общие `zen.py` и `zen.sh` |
-| `~/.local/share/zen/` | данные: исходник модуля gtklock, палитра консоли (`terminal.vtrgb`) |
+| `~/.local/share/zen/` | данные: исходник модуля gtklock и `templates/` — файлы с цветами палитры (mako, GTK, gtklock, Qt, KDE, Kvantum, foot, рамки окон Niri) |
 | `~/.config/zen/zen.conf` | твои настройки |
 | `~/.local/state/zen/` | что запоминают меню: режимы мониторов, закреплённые записи буфера |
 | `zen-*.service` | пользовательские сервисы: `zen-idle`, `zen-caffeine`, `zen-autowidth`, `zen-battery`, `zen-cliphist`, `zen-kanshi`, `zen-menu-close` |
@@ -40,13 +41,27 @@ cp -r hosts/zen hosts/$(cat /etc/hostname)   # и поправить под эт
 ```
 
 `deploy.sh` ставит пакеты, копирует файлы (каждый заменяемый файл сохраняется
-в `~/zen-deploy-backup-<дата>/`), собирает переводы, палитру и курсор, включает
-сервисы, пересобирает образ загрузки, если поменялось то, из чего он собирается,
-и собирает модуль gtklock.
+в `~/zen-deploy-backup-<дата>/`), убирает то, что ставили прежние версии
+(`lists/removed.txt`), собирает переводы, пишет цвета через `zen apply`,
+ставит курсор, включает сервисы, пересобирает загрузочный образ, если
+изменились его исходники, и собирает модуль gtklock, если gtklock обновился.
+
+Система работает с копий, а не из репозитория. Чтобы что-то изменить, правь
+в репозитории и запускай `./deploy.sh --no-packages`; `zen diff` покажет, что
+с тех пор менялось прямо в системе, чтобы перенести это обратно.
 
 ## Настройки
 
 `~/.config/zen/zen.conf` (пример — `home/.config/zen/zen.conf.example`):
-локаль для скриптов zen, город и контакт для погоды, палитра. Язык, единицы,
-первый день недели и 12/24-часовое время берутся из локали. После смены
-палитры или локали — `zen apply`.
+локаль для скриптов zen, город и контакт для погоды, палитра и цвета
+терминала. Язык, единицы, первый день недели и 12/24-часовое время берутся
+из локали.
+
+## Цвета
+
+Одна палитра в `zen.conf` красит всё. `zen apply` переносит её в переменные
+Rofi и Waybar и в шаблоны: mako, GTK 3/4, gtklock, Qt (qt5ct, qt6ct, Kvantum,
+цветовая схема KDE), foot, рамки окон Niri, консоль каждого tty
+(`/etc/zen/console.vtrgb`, при загрузке её ставят `zen-console.service` и Ly)
+и меню загрузки Limine. Mako, Waybar и консоль обновляются сразу, остальные
+программы — при перезапуске.

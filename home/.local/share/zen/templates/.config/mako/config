@@ -1,8 +1,8 @@
 max-history=20
 font=JetBrainsMono Nerd Font 12
-background-color=#0b0b0b
-text-color=#dedede
-border-color=#555555
+background-color={{bg}}
+text-color={{fg}}
+border-color={{line}}
 border-size=1
 border-radius=6
 padding=10
@@ -14,10 +14,10 @@ icon-path=/usr/share/icons/Papirus-Dark
 max-icon-size=32
 
 [urgency=low]
-text-color=#bebebe
+text-color={{muted}}
 
 [urgency=high]
-border-color=#f3a3bb
+border-color={{critical}}
 default-timeout=0
 
 [mode=do-not-disturb]

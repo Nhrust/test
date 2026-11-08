@@ -1,27 +1,113 @@
 #!/usr/bin/env python3
-"""apply — write the files generated from ~/.config/zen/zen.conf:
-the palette for Rofi and Waybar (rofi/zen-colors.rasi, waybar/zen-colors.css)
-and the translated Rofi search placeholder (rofi/zen-text.rasi)."""
+"""apply — write everything that follows ~/.config/zen/zen.conf.
+
+  zen apply           your files and, with sudo, the console and boot menu colours
+  zen apply --user    only the files in your home folder
+
+Colour variables: rofi/zen-colors.rasi (@zen-NAME), waybar/zen-colors.css
+(@zen_NAME), and the Rofi search placeholder in the zen locale.
+Templates: ~/.local/share/zen/templates/PATH becomes ~/PATH, and
+/usr/local/share/zen/templates/PATH becomes /PATH. In a template {{NAME}} is
+a colour from [palette] or [terminal]; see zen.render for the formats.
+Only files whose content changes are written; running programs are told to
+reload them.
+"""
+import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
 import zen  # noqa: E402
 from zen import _  # noqa: E402
 
+USER_TEMPLATES = zen.DATA_HOME / "zen/templates"
+SYSTEM_TEMPLATES = Path("/usr/local/share/zen/templates")
 
-def write(path, text):
+
+def generated(colors):
+    search = _("Search").replace("\\", "\\\\").replace('"', '\\"')
+    rofi = dict(colors, urgent=colors["error"])
+    yield (zen.CONFIG_HOME / "rofi/zen-colors.rasi",
+           "* {\n" + "".join(f"    zen-{k}: {v};\n" for k, v in rofi.items()) + "}\n")
+    yield zen.CONFIG_HOME / "rofi/zen-text.rasi", f'entry {{\n    placeholder: "{search}";\n}}\n'
+    yield (zen.CONFIG_HOME / "waybar/zen-colors.css",
+           "".join(f"@define-color zen_{k} {v};\n" for k, v in colors.items()))
+
+
+def templates(root, target):
+    if not root.is_dir():
+        return
+    for src in sorted(p for p in root.rglob("*") if p.is_file()):
+        yield target / src.relative_to(root), src
+
+
+def write_user(path, text):
+    try:
+        if path.read_text() == text:
+            return False
+    except OSError:
+        pass
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
+    tmp = path.with_name(path.name + ".zen-new")
+    tmp.write_text(text)
+    os.replace(tmp, path)
     print(path)
+    return True
 
 
-colors = zen.palette()
-colors["urgent"] = colors["error"]
-search = _("Search").replace("\\", "\\\\").replace('"', '\\"')
+def write_system(path, text, mode):
+    with tempfile.NamedTemporaryFile("w", delete=False) as f:
+        f.write(text)
+        tmp = f.name
+    try:
+        same = subprocess.run(["sudo", "cmp", "-s", tmp, str(path)]).returncode == 0
+        if same:
+            return False
+        res = subprocess.run(["sudo", "install", "-D", "-m", mode, tmp, str(path)])
+        if res.returncode != 0:
+            print(f"! {path}: not written", file=sys.stderr)
+            return False
+        print(path)
+        return True
+    finally:
+        os.unlink(tmp)
 
-write(zen.CONFIG_HOME / "rofi/zen-colors.rasi",
-      "* {\n" + "".join(f"    zen-{k}: {v};\n" for k, v in colors.items()) + "}\n")
-write(zen.CONFIG_HOME / "rofi/zen-text.rasi", f'entry {{\n    placeholder: "{search}";\n}}\n')
-write(zen.CONFIG_HOME / "waybar/zen-colors.css",
-      "".join(f"@define-color zen-{k} {v};\n" for k, v in colors.items()))
+
+def reload(changed):
+    names = {str(p) for p in changed}
+    home = zen.CONFIG_HOME
+    if str(home / "mako/config") in names:
+        zen.run("makoctl", "reload")
+    if any(n.startswith(str(home / "waybar/")) for n in names):
+        zen.run("pkill", "-USR2", "-x", "waybar")
+    if "/etc/zen/console.vtrgb" in names:
+        zen.run("sudo", "setvtrgb", "/etc/zen/console.vtrgb")
+
+
+def main(argv):
+    only_user = "--user" in argv
+    colors = zen.colors()
+    changed = []
+    for path, text in generated(colors):
+        if write_user(path, text):
+            changed.append(path)
+    for path, src in templates(USER_TEMPLATES, Path.home()):
+        if write_user(path, zen.render(src.read_text(), colors)):
+            changed.append(path)
+    system = list(templates(SYSTEM_TEMPLATES, Path("/")))
+    if system and not only_user:
+        if subprocess.run(["sudo", "-v"]).returncode != 0:
+            print(_("Console and boot menu colours skipped: sudo is needed"), file=sys.stderr)
+        else:
+            for path, src in system:
+                mode = "755" if os.access(src, os.X_OK) else "644"
+                if write_system(path, zen.render(src.read_text(), colors), mode):
+                    changed.append(path)
+    reload(changed)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

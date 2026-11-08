@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""kvantum — build the Zen Kvantum theme (Zen.svg) from KvGnomeDark.svg.
+"""kvantum-svg — derive the Kvantum template (Zen.svg) from KvGnomeDark.svg.
 
-Usage: python3 ~/.local/lib/zen/kvantum.py /usr/share/Kvantum/KvGnomeDark/KvGnomeDark.svg ~/.config/Kvantum/Zen/Zen.svg
+  python3 tools/kvantum-svg.py /usr/share/Kvantum/KvGnomeDark/KvGnomeDark.svg \
+      home/.local/share/zen/templates/.config/Kvantum/Zen/Zen.svg
+
+Every colour of the source becomes a palette role ({{bg}}, {{accent}}, …),
+so "zen apply" can paint the theme in any palette.
 """
 import copy
 import re
@@ -15,7 +19,7 @@ ET.register_namespace("xlink", XLINK)
 HREF = f"{{{XLINK}}}href"
 
 BG, DIM, LINE, MUTED, FG, ACCENT, RED = (
-    "#0b0b0b", "#030303", "#555555", "#bebebe", "#dedede", "#bdb3fa", "#f7a692")
+    "{{bg}}", "{{deep}}", "{{line}}", "{{muted}}", "{{fg}}", "{{accent}}", "{{error}}")
 
 GLOBAL = {
     LINE:   "1b1b1b 1e1e1e 191919 171717 141414 202020 423b36 5a5a5a 646464 7b7b7b",
@@ -125,7 +129,7 @@ def main(src, dst):
         rx = re.compile(pattern)
         hit = [e for i, e in ids.items() if rx.search(i)]
         if not hit:
-            print(f"предупреждение: нет элементов для {pattern}", file=sys.stderr)
+            print(f"warning: nothing matches {pattern}", file=sys.stderr)
         for e in hit:
             if inline:
                 inline_uses(root, e, ids)
@@ -141,7 +145,7 @@ def main(src, dst):
     tree.write(dst, encoding="UTF-8", xml_declaration=False)
     left = sorted({v for e in root.iter() for _, v in styles(e)
                    if not v.startswith("url(") and v != "none"})
-    print("цвета в результате:", " ".join(left))
+    print("colours left:", " ".join(left))
 
 
 if __name__ == "__main__":

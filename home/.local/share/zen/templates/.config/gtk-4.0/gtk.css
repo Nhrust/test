@@ -1,0 +1,54 @@
+:root {
+  --window-bg-color: {{bg}};
+  --window-fg-color: {{fg}};
+  --view-bg-color: {{bg}};
+  --view-fg-color: {{fg}};
+
+  --headerbar-bg-color: {{bg}};
+  --headerbar-fg-color: {{fg}};
+  --headerbar-backdrop-color: {{bg}};
+  --headerbar-border-color: {{line}};
+
+  --sidebar-bg-color: {{bg}};
+  --sidebar-fg-color: {{fg}};
+  --sidebar-backdrop-color: {{bg}};
+  --sidebar-border-color: {{line}};
+  --secondary-sidebar-bg-color: {{bg}};
+  --secondary-sidebar-fg-color: {{fg}};
+  --secondary-sidebar-backdrop-color: {{bg}};
+  --secondary-sidebar-border-color: {{line}};
+
+  --card-fg-color: {{fg}};
+  --dialog-bg-color: {{bg}};
+  --dialog-fg-color: {{fg}};
+  --popover-bg-color: {{bg}};
+  --popover-fg-color: {{fg}};
+  --thumbnail-bg-color: {{bg}};
+  --thumbnail-fg-color: {{fg}};
+
+  --accent-bg-color: {{accent}};
+  --accent-fg-color: {{bg}};
+  --accent-color: {{accent}};
+
+  --destructive-bg-color: {{error}};
+  --destructive-fg-color: {{bg}};
+  --destructive-color: {{error}};
+  --success-bg-color: {{success}};
+  --success-fg-color: {{bg}};
+  --success-color: {{success}};
+  --warning-bg-color: {{warning}};
+  --warning-fg-color: {{bg}};
+  --warning-color: {{warning}};
+  --error-bg-color: {{error}};
+  --error-fg-color: {{bg}};
+  --error-color: {{error}};
+}
+/* zen-cards { */
+:root {
+  --card-bg-color: color-mix(in srgb, {{fg}} 6%, transparent);
+  --card-shade-color: {{line}};
+}
+.card, list.boxed-list, list.boxed-list-separate > row {
+  box-shadow: 0 0 0 1px {{line}};
+}
+/* zen-cards } */

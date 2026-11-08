@@ -10,7 +10,8 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 |---|---|
 | `home/` | files for `$HOME`: Niri, Waybar, Rofi, mako, gtklock, foot, fish, tmux, Neovim, Qt/GTK theme, the zen scripts |
 | `etc/`, `usr/local/` | system files: pacman, makepkg, logind, sleep, UPower, NetworkManager, nftables, sshd (port 9728, only your user), Ly, zram, hooks |
-| `efi/limine.conf` | boot menu |
+| `usr/local/share/zen/templates/` | colour templates of system files: the console palette, the boot menu (`efi/limine.conf`) |
+| `tools/` | for working on the theme, not installed: `kvantum-svg.py` derives the Kvantum template |
 | `hosts/NAME/` | what differs per machine: kernel command line, initramfs modules, hardware rules, snapshots, packages, place and monitors |
 | `packages/` | package lists: `base`, `desktop`, `extra` |
 | `lists/` | services to enable |
@@ -21,9 +22,9 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Path | What |
 |---|---|
-| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen apply`, `zen gtklock`) |
+| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen apply`, `zen diff`, `zen gtklock`) |
 | `~/.local/lib/zen/` | internals: `bar/` (Waybar and tmux modules), background helpers, the shared `zen.py` and `zen.sh` |
-| `~/.local/share/zen/` | data: the gtklock module source, the terminal palette (`terminal.vtrgb`) |
+| `~/.local/share/zen/` | data: the gtklock module source and `templates/` — files that carry the palette (mako, GTK, gtklock, Qt, KDE, Kvantum, foot, Niri borders) |
 | `~/.config/zen/zen.conf` | your settings |
 | `~/.local/state/zen/` | what the menus remember: monitor modes, pinned clipboard entries |
 | `zen-*.service` | user services: `zen-idle`, `zen-caffeine`, `zen-autowidth`, `zen-battery`, `zen-cliphist`, `zen-kanshi`, `zen-menu-close` |
@@ -40,13 +41,28 @@ cp -r hosts/zen hosts/$(cat /etc/hostname)   # then edit it for this machine
 ```
 
 `deploy.sh` installs the packages, copies the files (every replaced file is
-saved to `~/zen-deploy-backup-<date>/`), builds the translations, palette and
-cursor, enables the services, rebuilds the boot image when its inputs changed
-and builds the gtklock module.
+saved to `~/zen-deploy-backup-<date>/`), removes what older versions installed
+(`lists/removed.txt`), builds the translations, writes the colours with
+`zen apply`, sets the cursor, enables the services, rebuilds the boot image
+when its inputs changed and builds the gtklock module when gtklock changed.
+
+The system runs from the copies, not from the repository. To change
+something, edit it in the repository and run `./deploy.sh --no-packages`;
+`zen diff` lists what was changed on the system since, so it can be carried
+back.
 
 ## Settings
 
 `~/.config/zen/zen.conf` (example in `home/.config/zen/zen.conf.example`):
-locale for the zen scripts, weather location and contact, and the palette.
-Language, units, first weekday and 12/24-hour time follow the locale.
-Run `zen apply` after changing it.
+locale for the zen scripts, weather location and contact, the palette and
+the terminal colours. Language, units, first weekday and 12/24-hour time
+follow the locale.
+
+## Colours
+
+One palette in `zen.conf` paints everything. `zen apply` renders it into
+Rofi and Waybar variables and into the templates: mako, GTK 3/4, gtklock,
+Qt (qt5ct, qt6ct, Kvantum, KDE colour scheme), foot, Niri window borders,
+the console of every tty (`/etc/zen/console.vtrgb`, set at boot by
+`zen-console.service` and by Ly) and the Limine boot menu. Mako, Waybar and
+the console reload at once; other programs pick the colours up on restart.

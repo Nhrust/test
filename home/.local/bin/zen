@@ -4,13 +4,16 @@ LIB="$HOME/.local/lib/zen"
 
 case ${1:-} in
 	apply) shift; exec "$LIB/apply" "$@" ;;
+	diff) shift; exec "$LIB/diff" "$@" ;;
 	gtklock) shift; exec "$LIB/gtklock-build" "$@" ;;
 	*)
 		cat <<EOF
 usage: zen COMMAND
 
-  apply     regenerate what follows ~/.config/zen/zen.conf: palette, Rofi search text
-  gtklock   rebuild zen-module for the installed gtklock
+  apply [--user]     write what follows ~/.config/zen/zen.conf: colours of every
+                     program, the console and the boot menu (--user: home only)
+  diff [PATH...]     what differs from the repository deploy.sh last used
+  gtklock [--force]  rebuild zen-module when gtklock or its source changed
 
 menus:  zen-center  zen-displays  zen-clipboard  zen-power
 other:  zen-lock  zen-step

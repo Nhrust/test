@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""diff — what differs between the system and the repository it was deployed from.
+
+  zen diff              list the files that differ
+  zen diff PATH...      show the changes in these files (~/… or /etc/…)
+
+The repository and host are the ones deploy.sh last used. Files the menus
+keep in ~/.local/state are left out. A generated file that differs from its
+template was edited by hand: change the template and run "zen apply" instead.
+"""
+import difflib
+import getpass
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
+import zen  # noqa: E402
+
+HOME = Path.home()
+STATE = zen.STATE_HOME / "zen"
+
+
+def show(path):
+    p = str(path)
+    h = str(HOME)
+    return "~" + p[len(h):] if p == h or p.startswith(h + "/") else p
+
+
+def read(path):
+    try:
+        return path.read_bytes()
+    except FileNotFoundError:
+        return None
+    except PermissionError:
+        res = subprocess.run(["sudo", "-n", "cat", str(path)], capture_output=True)
+        return res.stdout if res.returncode == 0 else PermissionError
+
+
+def files(root):
+    if root.is_dir():
+        for p in sorted(root.rglob("*")):
+            if p.is_file():
+                yield p.relative_to(root), p
+
+
+def expected(repo, host):
+    """target → (kind, bytes) the way deploy.sh and zen apply would write it."""
+    out = {}
+    subst = {b"@HOME@": str(HOME).encode(), b"@USER@": getpass.getuser().encode()}
+    trees = [("home", HOME), ("etc", Path("/etc")), ("usr/local", Path("/usr/local"))]
+    for base in (repo, repo / "hosts" / host):
+        for sub, target in trees:
+            for rel, src in files(base / sub):
+                data = src.read_bytes()
+                for k, v in subst.items():
+                    data = data.replace(k, v)
+                out[target / rel] = ("file", data)
+    colors = zen.colors()
+    for tdir, target in ((repo / "home/.local/share/zen/templates", HOME),
+                         (repo / "usr/local/share/zen/templates", Path("/"))):
+        for rel, src in files(tdir):
+            out[target / rel] = ("generated", zen.render(src.read_text(), colors).encode())
+    return {t: v for t, v in out.items() if not str(t).startswith(str(HOME / ".local/state") + "/")}
+
+
+def main(argv):
+    try:
+        repo = Path((STATE / "repo").read_text().strip())
+        host = (STATE / "host").read_text().strip()
+    except OSError:
+        print("zen diff: run deploy.sh once so it knows the repository", file=sys.stderr)
+        return 2
+    want = expected(repo, host)
+
+    if argv:
+        rc = 0
+        for arg in argv:
+            path = Path(os.path.abspath(os.path.expanduser(arg)))
+            if path not in want:
+                print(f"{show(path)}: not in {repo}", file=sys.stderr)
+                rc = 2
+                continue
+            kind, data = want[path]
+            have = read(path)
+            if have is PermissionError:
+                print(f"{show(path)}: needs sudo (run sudo -v first)", file=sys.stderr)
+                continue
+            a = (have or b"").decode("utf-8", "replace").splitlines(keepends=True)
+            b = data.decode("utf-8", "replace").splitlines(keepends=True)
+            label = "template" if kind == "generated" else "repository"
+            sys.stdout.writelines(difflib.unified_diff(b, a, f"{label}: {show(path)}", f"system: {show(path)}"))
+        return rc
+
+    differ = 0
+    for path in sorted(want):
+        kind, data = want[path]
+        have = read(path)
+        if have is PermissionError:
+            print(f"unreadable  {show(path)}  (run sudo -v first)")
+        elif have is None:
+            print(f"missing     {show(path)}")
+            differ += 1
+        elif have != data:
+            note = "  (edited by hand: change the template, then zen apply)" if kind == "generated" else ""
+            print(f"changed     {show(path)}{note}")
+            differ += 1
+    if not differ:
+        print(f"the system matches {show(repo)} (host {host})")
+    return 1 if differ else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

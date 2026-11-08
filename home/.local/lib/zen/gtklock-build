@@ -1,18 +1,27 @@
 #!/bin/sh
 # gtklock-build — build zen-module for the installed gtklock.
+#   gtklock-build           only when gtklock, its powerbar module or the source changed
+#   gtklock-build --force   always
 set -eu
 . "$HOME/.local/lib/zen/zen.sh"
 
 SRC="${XDG_DATA_HOME:-$HOME/.local/share}/zen/src/zen-module.c"
 OUT="$HOME/.local/lib/gtklock"
-TMP=$(mktemp -d)
-trap 'rm -rf "$TMP"' EXIT
 
 ver=$(gtklock -v | sed -n 's/^gtklock v\([0-9]*\)\.\([0-9]*\)\..*/\1 \2/p')
 major=${ver% *}
 minor=${ver#* }
 pb=$(pacman -Q gtklock-powerbar-module | awk '{print $2}' | sed 's/-[0-9]*$//')
+stamp="gtklock $major.$minor powerbar $pb source $(sha256sum < "$SRC" | cut -d' ' -f1)"
 
+if [ "${1:-}" != --force ] && [ -f "$OUT/zen-module.so" ] &&
+	[ "$(cat "$OUT/zen-module.stamp" 2>/dev/null)" = "$stamp" ]; then
+	echo "$OUT/zen-module.so is up to date (gtklock $major.$minor)"
+	exit 0
+fi
+
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
 echo "gtklock $major.$minor, gtklock-powerbar-module v$pb"
 curl -fsSL -o "$TMP/gtklock-module.h" \
   "https://raw.githubusercontent.com/jovanlanik/gtklock-powerbar-module/v$pb/gtklock-module.h"
@@ -22,4 +31,5 @@ gcc -shared -fPIC -DZEN_MAJOR="$major" -DZEN_MINOR="$minor" -I"$TMP" \
   -o "$OUT/zen-module.so.new" "$SRC" $(pkg-config --cflags --libs gtk+-3.0)
 mv "$OUT/zen-module.so.new" "$OUT/zen-module.so"
 echo "$major" > "$OUT/zen-module.built"
+echo "$stamp" > "$OUT/zen-module.stamp"
 echo "$OUT/zen-module.so (gtklock $major)"

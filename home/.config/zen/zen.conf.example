@@ -15,6 +15,8 @@ name =
 # Contact for api.met.no (https://docs.api.met.no/doc/TermsOfService).
 contact =
 
+# Colours of every program, the console and the boot menu. After a change
+# run "zen apply"; programs that cannot reload pick it up on restart.
 [palette]
 bg = #0b0b0b
 fg = #dedede
@@ -23,3 +25,19 @@ line = #555555
 accent = #bdb3fa
 critical = #f3a3bb
 error = #f7a692
+info = #69cee6
+success = #8ed09c
+warning = #ebb077
+# darker than bg: sunken areas in Qt and Kvantum
+deep = #030303
+# the panel background
+bar = #000000
+# the border of unfocused windows
+inactive = #2e2e2e
+
+# Terminal colours (foot, the console, the boot menu). By default they follow
+# the palette: color0 = bg, color1 = error, color2 = success, color3 = warning,
+# color4 = accent, color5 = critical, color6 = info, color7 = fg, color8 = line,
+# dim0 = deep, dim7 = muted. Set any of color0…color15 or dim0…dim7 to a colour
+# or to a palette name to change it.
+[terminal]

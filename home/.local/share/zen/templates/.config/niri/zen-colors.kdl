@@ -1,0 +1,7 @@
+layout {
+    border {
+        active-color "{{dim4}}"
+        inactive-color "{{inactive}}"
+        urgent-color "{{dim5}}"
+    }
+}

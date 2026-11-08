@@ -1,0 +1,34 @@
+@define-color window_bg_color {{bg}};
+@define-color window_fg_color {{fg}};
+@define-color view_bg_color {{bg}};
+@define-color view_fg_color {{fg}};
+@define-color headerbar_bg_color {{bg}};
+@define-color headerbar_fg_color {{fg}};
+@define-color headerbar_backdrop_color {{bg}};
+@define-color headerbar_border_color {{line}};
+@define-color sidebar_bg_color {{bg}};
+@define-color sidebar_fg_color {{fg}};
+@define-color sidebar_backdrop_color {{bg}};
+@define-color card_fg_color {{fg}};
+@define-color dialog_bg_color {{bg}};
+@define-color dialog_fg_color {{fg}};
+@define-color popover_bg_color {{bg}};
+@define-color popover_fg_color {{fg}};
+
+@define-color accent_bg_color {{accent}};
+@define-color accent_fg_color {{bg}};
+@define-color accent_color {{accent}};
+
+@define-color destructive_bg_color {{error}};
+@define-color destructive_fg_color {{bg}};
+@define-color destructive_color {{error}};
+@define-color success_color {{success}};
+@define-color warning_color {{warning}};
+@define-color error_color {{error}};
+/* zen-cards { */
+@define-color card_bg_color alpha({{fg}}, 0.06);
+@define-color card_shade_color {{line}};
+.card, list.boxed-list, list.boxed-list-separate > row {
+  box-shadow: 0 0 0 1px {{line}};
+}
+/* zen-cards } */

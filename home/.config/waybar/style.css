@@ -1,3 +1,5 @@
+@import url("zen-colors.css");
+
 * {
     font-family: "JetBrainsMono Nerd Font";
     font-size: 10pt;
@@ -8,8 +10,8 @@
 }
 
 window#waybar {
-    background-color: #000000;
-    color: #dedede;
+    background-color: @zen_bar;
+    color: @zen_fg;
 }
 
 #workspaces {
@@ -21,7 +23,7 @@ window#waybar {
     padding: 0;
     min-width: 6px;
     min-height: 0;
-    border: 1px solid #555555;
+    border: 1px solid @zen_line;
     border-radius: 4px;
     background-color: transparent;
     background-image: none;
@@ -36,16 +38,16 @@ window#waybar {
 
 #workspaces button.focused {
     min-width: 18px;
-    border-color: #bdb3fa;
-    background-color: #bdb3fa;
+    border-color: @zen_accent;
+    background-color: @zen_accent;
 }
 
 #workspaces button.urgent {
-    border-color: #f3a3bb;
+    border-color: @zen_critical;
 }
 
 #workspaces button:hover {
-    border-color: #bebebe;
+    border-color: @zen_muted;
 }
 
 #cpu,
@@ -54,14 +56,14 @@ window#waybar {
 #custom-temp,
 #custom-speed {
     padding: 0 10px;
-    color: #dedede;
+    color: @zen_fg;
 }
 
 #custom-gpu,
 #memory,
 #custom-temp,
 #custom-speed {
-    border-left: 1px solid #555555;
+    border-left: 1px solid @zen_line;
 }
 
 #custom-gap-l1,
@@ -75,7 +77,7 @@ window#waybar {
 #custom-date,
 #custom-weather {
     padding: 0 8px;
-    color: #dedede;
+    color: @zen_fg;
 }
 
 #tray,
@@ -84,7 +86,7 @@ window#waybar {
 #wireplumber,
 #battery {
     padding: 0 10px;
-    color: #dedede;
+    color: @zen_fg;
 }
 
 #custom-net {
@@ -94,54 +96,54 @@ window#waybar {
 #custom-lang,
 #wireplumber,
 #battery {
-    border-left: 1px solid #555555;
+    border-left: 1px solid @zen_line;
 }
 
 #battery.charging {
-    color: #bdb3fa;
+    color: @zen_accent;
 }
 
 #battery.warning:not(.charging) {
-    color: #69cee6;
+    color: @zen_info;
 }
 
 #battery.critical:not(.charging) {
-    color: #f3a3bb;
+    color: @zen_critical;
 }
 
 #wireplumber.muted {
-    color: #555555;
+    color: @zen_line;
 }
 
 #tray > .needs-attention {
-    color: #f3a3bb;
+    color: @zen_critical;
 }
 
 #backlight {
     padding: 0 10px;
-    color: #dedede;
-    border-left: 1px solid #555555;
+    color: @zen_fg;
+    border-left: 1px solid @zen_line;
 }
 
 #power {
-    border-left: 1px solid #555555;
+    border-left: 1px solid @zen_line;
 }
 #power #battery {
     border-left: none;
 }
 #custom-profile {
     padding: 0 4px 0 10px;
-    color: #dedede;
+    color: @zen_fg;
 }
 
 #custom-powerbtn {
     padding: 0 10px 0 0;
-    color: #dedede;
+    color: @zen_fg;
 }
 
 #light,
 #sound {
-    border-left: 1px solid #555555;
+    border-left: 1px solid @zen_line;
 }
 #light #backlight,
 #sound #wireplumber {
@@ -155,10 +157,10 @@ window#waybar {
 
 #custom-caffeine {
     padding: 0 10px 0 0;
-    color: #dedede;
+    color: @zen_fg;
 }
 
 #custom-dnd {
     padding: 0 10px 0 0;
-    color: #dedede;
+    color: @zen_fg;
 }

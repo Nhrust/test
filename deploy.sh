@@ -3,8 +3,10 @@
 #
 #   ./deploy.sh [--dry-run] [--host NAME] [--no-packages]
 #
-# Order: packages → home files → /etc files → /efi/limine.conf → translations,
-# palette, cursor → services → initramfs/UKI if needed → gtklock module.
+# Order: packages → home files → /etc and /usr/local files → files that older
+# versions installed (lists/removed.txt) → translations → zen apply (colours,
+# console and boot menu) → cursor → services → initramfs/UKI if needed →
+# gtklock module.
 # Common files come first, then hosts/NAME overrides them. Every file that is
 # replaced is copied to ~/zen-deploy-backup-<date>/ first (or $ZEN_BACKUP),
 # and new files are listed in created.txt there.
@@ -108,14 +110,25 @@ tree "$H/home" "$HOME" ""
 tree "$ROOT/etc" /etc sudo
 tree "$H/etc" /etc sudo
 tree "$ROOT/usr/local" /usr/local sudo
-if [ -f "$H/efi/limine.conf" ]; then
-	place "$H/efi/limine.conf" /efi/limine.conf sudo
-else
-	place "$ROOT/efi/limine.conf" /efi/limine.conf sudo
-fi
+tree "$H/usr/local" /usr/local sudo
 [ ! -s "$LOCALES" ] || run sudo locale-gen
 
-# 3. translations, palette, cursor
+# files earlier versions installed and this one does not
+for f in $(lines "$ROOT/lists/removed.txt"); do
+	case $f in "~/"*) f="$HOME/${f#\~/}" ;; esac
+	sudo=
+	case $f in "$HOME"/*) ;; *) sudo=sudo ;; esac
+	$sudo test -e "$f" || continue
+	run $sudo mkdir -p "$BACKUP$(dirname "$f")"
+	run $sudo mv "$f" "$BACKUP$f"
+	run $sudo rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")" 2>/dev/null || true
+done
+
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/zen"
+run mkdir -p "$STATE"
+[ -n "$DRY" ] || { printf '%s\n' "$ROOT" > "$STATE/repo"; printf '%s\n' "$HOST" > "$STATE/host"; }
+
+# 3. translations, colours, cursor
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 for po in "$ROOT"/po/*.po; do
 	lang=$(basename "$po" .po)
@@ -165,6 +178,7 @@ enable_units() {
 	done
 }
 run systemctl --user daemon-reload
+run sudo systemctl daemon-reload
 enable_units user "$ROOT/lists/user-services.txt" "$H/user-services.txt"
 enable_units system "$ROOT/lists/system-services.txt" "$H/system-services.txt"
 if grep -qx 'ly@tty2.service' "$ROOT/lists/system-services.txt"; then

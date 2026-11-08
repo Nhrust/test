@@ -1,0 +1,16 @@
+[Unit]
+Description=Zen console palette
+Documentation=man:setvtrgb(8)
+DefaultDependencies=no
+After=systemd-vconsole-setup.service
+Before=getty-pre.target sysinit.target shutdown.target
+Conflicts=shutdown.target
+ConditionPathExists=/etc/zen/console.vtrgb
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/setvtrgb /etc/zen/console.vtrgb
+
+[Install]
+WantedBy=sysinit.target

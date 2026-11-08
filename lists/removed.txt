@@ -1,0 +1,3 @@
+# Files that earlier versions of zen installed; deploy.sh moves them to its backup.
+~/.local/share/zen/palette/terminal.vtrgb
+~/.local/lib/zen/kvantum.py

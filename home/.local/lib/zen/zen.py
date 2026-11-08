@@ -3,6 +3,7 @@ import configparser
 import gettext
 import locale
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -21,12 +22,30 @@ PALETTE = {
     "accent": "#bdb3fa",
     "critical": "#f3a3bb",
     "error": "#f7a692",
+    "info": "#69cee6",
+    "success": "#8ed09c",
+    "warning": "#ebb077",
+    "deep": "#030303",
+    "bar": "#000000",
+    "inactive": "#2e2e2e",
+}
+
+# The 16 terminal colours and 8 dim ones. A name in place of a colour takes
+# that role from [palette], so changing the palette changes the terminal too.
+TERMINAL = {
+    "color0": "bg", "color1": "error", "color2": "success", "color3": "warning",
+    "color4": "accent", "color5": "critical", "color6": "info", "color7": "fg",
+    "color8": "line", "color9": "#ffd1c0", "color10": "#bfeacd", "color11": "#f8d8b3",
+    "color12": "#e1d7ff", "color13": "#ffced8", "color14": "#b2e8fa", "color15": "#ffffff",
+    "dim0": "deep", "dim1": "#c57670", "dim2": "#6e9e63", "dim3": "#be7e51",
+    "dim4": "#8488cb", "dim5": "#bd7598", "dim6": "#2ca0ac", "dim7": "muted",
 }
 
 DEFAULTS = {
     "general": {"locale": ""},
     "weather": {"location": "", "name": "", "contact": ""},
     "palette": PALETTE,
+    "terminal": TERMINAL,
 }
 
 
@@ -57,8 +76,46 @@ ngettext = _translation.ngettext
 
 
 def palette():
+    """The named roles of [palette]."""
     cfg = settings()
-    return {key: cfg.get("palette", key) for key in PALETTE}
+    return {key: cfg.get("palette", key).strip() for key in PALETTE}
+
+
+def colors():
+    """[palette] roles and [terminal] colours together, every value #rrggbb."""
+    cfg = settings()
+    out = palette()
+    for key in TERMINAL:
+        value = cfg.get("terminal", key).strip()
+        out[key] = out.get(value, value)
+    return out
+
+
+_TOKEN = re.compile(r"\{\{\s*([a-z0-9]+)(?:\|([a-z]+)(?::([0-9a-f]{2}))?)?\s*\}\}")
+
+
+def render(text, values=None):
+    """Fill {{name}} in a template: #rrggbb, {{name|hex}} rrggbb,
+    {{name|rgb}} r,g,b, {{name|argb:AA}} #AArrggbb, {{name|rgba:AA}} #rrggbbAA."""
+    values = values or colors()
+
+    def sub(m):
+        key, fmt, alpha = m.groups()
+        if key not in values:
+            raise KeyError(f"unknown colour {{{{{key}}}}}")
+        h = values[key].lstrip("#").lower()
+        if fmt is None:
+            return "#" + h
+        if fmt == "hex":
+            return h
+        if fmt == "rgb":
+            return ",".join(str(int(h[i:i + 2], 16)) for i in (0, 2, 4))
+        if fmt == "argb":
+            return "#" + (alpha or "ff") + h
+        if fmt == "rgba":
+            return "#" + h + (alpha or "ff")
+        raise KeyError(f"unknown format {fmt}")
+    return _TOKEN.sub(sub, text)
 
 
 def run(*cmd, **kwargs):
