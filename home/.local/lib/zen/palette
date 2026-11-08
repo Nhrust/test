@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""zen-palette — write the palette from ~/.config/zen/zen.conf into the colour
+"""palette — write the palette from ~/.config/zen/zen.conf into the colour
 files that Rofi and Waybar import (rofi/zen-colors.rasi, waybar/zen-colors.css)."""
 import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "zen/python"))
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
 import zen  # noqa: E402
 
 colors = zen.palette()

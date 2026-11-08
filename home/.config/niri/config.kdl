@@ -171,11 +171,11 @@ binds {
     
     Mod+Shift+Q { spawn-sh "~/.local/bin/zen-power"; }
     Mod+E { spawn "nautilus" "--new-window"; }
-    Mod+V { spawn-sh "~/.local/bin/zen-clip"; }
+    Mod+V { spawn-sh "~/.local/bin/zen-clipboard"; }
     
     Ctrl+Shift+Escape { spawn "foot" "btop"; }
-    Mod+P { spawn-sh "~/.local/bin/zen-display"; }
-    Mod+Shift+A { spawn-sh "~/.local/bin/zen-summary"; }
+    Mod+P { spawn-sh "~/.local/bin/zen-displays"; }
+    Mod+Shift+A { spawn-sh "~/.local/bin/zen-center"; }
 
     XF86AudioRaiseVolume  allow-when-locked=true { spawn-sh "~/.local/bin/zen-step volume up"; }
     XF86AudioLowerVolume  allow-when-locked=true { spawn-sh "~/.local/bin/zen-step volume down"; }
@@ -294,7 +294,7 @@ binds {
     Mod+Ctrl+Shift+R { switch-preset-window-height; }
     Mod+Ctrl+R { reset-window-height; }
 
-    Mod+F { spawn-sh "~/.local/bin/zen-autowidth toggle"; }
+    Mod+F { spawn-sh "~/.local/lib/zen/autowidth toggle"; }
     Mod+Shift+F { fullscreen-window; }
 
     Mod+M { maximize-window-to-edges; }

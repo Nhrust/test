@@ -1,10 +1,11 @@
 [Unit]
+Description=Zen: critical battery notification
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/swayidle -w timeout 180 '%h/.local/bin/zen-lock' before-sleep '%h/.local/bin/zen-lock' lock '%h/.local/bin/zen-lock'
+ExecStart=%h/.local/lib/zen/battery
 Restart=on-failure
 
 [Install]

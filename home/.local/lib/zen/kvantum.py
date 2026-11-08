@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""zen_kvantum — build the Zen Kvantum theme (Zen.svg) from KvGnomeDark.svg.
+"""kvantum — build the Zen Kvantum theme (Zen.svg) from KvGnomeDark.svg.
 
-Usage: python3 zen_kvantum.py /usr/share/Kvantum/KvGnomeDark/KvGnomeDark.svg ~/.config/Kvantum/Zen/Zen.svg
+Usage: python3 ~/.local/lib/zen/kvantum.py /usr/share/Kvantum/KvGnomeDark/KvGnomeDark.svg ~/.config/Kvantum/Zen/Zen.svg
 """
 import copy
 import re

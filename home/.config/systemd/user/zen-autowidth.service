@@ -1,10 +1,11 @@
 [Unit]
+Description=Zen: automatic column width in Niri
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target
 
 [Service]
-ExecStart=%h/.local/bin/zen-battery-watch
+ExecStart=%h/.local/lib/zen/autowidth
 Restart=on-failure
 
 [Install]

@@ -6,7 +6,8 @@
 # Order: packages → home files → /etc files → /efi/limine.conf → translations,
 # palette, cursor → services → initramfs/UKI if needed → gtklock module.
 # Common files come first, then hosts/NAME overrides them. Every file that is
-# replaced is copied to ~/zen-deploy-backup-<date>/ first.
+# replaced is copied to ~/zen-deploy-backup-<date>/ first (or $ZEN_BACKUP),
+# and new files are listed in created.txt there.
 set -eu
 
 ROOT=$(cd "$(dirname "$0")" && pwd)
@@ -28,7 +29,7 @@ if [ ! -d "$H" ]; then
 	ls "$ROOT/hosts"
 	exit 1
 fi
-BACKUP="$HOME/zen-deploy-backup-$(date +%Y%m%d-%H%M%S)"
+BACKUP=${ZEN_BACKUP:-"$HOME/zen-deploy-backup-$(date +%Y%m%d-%H%M%S)"}
 REBUILD=$(mktemp)
 LOCALES=$(mktemp)
 SSHD=$(mktemp)
@@ -72,6 +73,9 @@ place() {
 	if $sudo test -e "$dst"; then
 		run $sudo mkdir -p "$BACKUP$(dirname "$dst")"
 		run $sudo cp -p "$dst" "$BACKUP$dst"
+	elif [ -z "$DRY" ]; then
+		mkdir -p "$BACKUP"
+		printf '%s\n' "$dst" >> "$BACKUP/created.txt"
 	fi
 	mode=$(stat -c %a "$1")
 	[ "$dst" = /etc/sudoers ] && mode=440
@@ -118,7 +122,7 @@ for po in "$ROOT"/po/*.po; do
 done
 [ -e "${XDG_CONFIG_HOME:-$HOME/.config}/zen/zen.conf" ] ||
 	run cp "${XDG_CONFIG_HOME:-$HOME/.config}/zen/zen.conf.example" "${XDG_CONFIG_HOME:-$HOME/.config}/zen/zen.conf"
-run "$HOME/.local/bin/zen-palette"
+run "$HOME/.local/bin/zen" palette
 
 CURSOR=Bibata-Modern-Classic
 CURSOR_URL=https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.7/$CURSOR.tar.xz
@@ -135,6 +139,9 @@ if [ ! -d "$DATA/icons/$CURSOR" ]; then
 	rm -f "$t"
 fi
 run gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR"
+if command -v fish >/dev/null; then
+	run fish -c 'fish_add_path -U ~/.local/bin'
+fi
 
 # 4. services
 enable_units() {
@@ -164,7 +171,7 @@ fi
 # 5. boot image and lock screen module
 [ ! -s "$REBUILD" ] || run sudo mkinitcpio -P
 [ ! -s "$SSHD" ] || run sudo systemctl try-reload-or-restart sshd.service
-run "$HOME/.local/bin/zen-module-build"
+run "$HOME/.local/bin/zen" gtklock
 
 [ -d "$BACKUP" ] && say "replaced files: $BACKUP"
 say "done; log out and back in to start the session"

@@ -1,5 +1,5 @@
 #!/bin/sh
-# zen-net — network state: Offline / WIFI / LAN / LAN+WIFI; "icon" — Nerd Font icons.
+# net — network state: Offline / WIFI / LAN / LAN+WIFI; "icon" — Nerd Font icons.
 d=$(nmcli -t -f TYPE,STATE device 2>/dev/null)
 l=; w=
 echo "$d" | grep -q '^ethernet:connected' && l=1

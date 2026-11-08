@@ -9,6 +9,7 @@ from pathlib import Path
 
 CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
 DATA_HOME = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
+STATE_HOME = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state")
 RUNTIME = Path(os.environ.get("XDG_RUNTIME_DIR") or "/tmp")
 CONFIG = CONFIG_HOME / "zen" / "zen.conf"
 

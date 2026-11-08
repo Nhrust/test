@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""zen-clip — clipboard history (cliphist) with pinned entries in Rofi."""
+"""zen-clipboard — clipboard history (cliphist) with pinned entries in Rofi."""
 import os
 import re
 import subprocess
@@ -7,13 +7,13 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "zen/python"))
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
 import zen  # noqa: E402
 from zen import _  # noqa: E402
 
-PINS = zen.CONFIG_HOME / "zen/clip-pins"
-OLD_PINS = zen.CONFIG_HOME / "theme/clip-pins"
-THEME = zen.CONFIG_HOME / "rofi/clip.rasi"
+PINS = zen.STATE_HOME / "zen/clip-pins"
+OLD_PINS = zen.CONFIG_HOME / "zen/clip-pins"
+THEME = zen.CONFIG_HOME / "rofi/clipboard.rasi"
 COLOR = zen.palette()
 SELF = os.path.realpath(__file__)
 
@@ -22,7 +22,7 @@ PREVIEW_W = 100
 IMAGE = re.compile(r"^\[\[ binary data (.+) (\w+) (\d+)x(\d+) \]\]$")
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
 
-ICONS = zen.RUNTIME / "zen-clip"
+ICONS = zen.RUNTIME / "zen-clipboard"
 STAR_ON = ICONS / "star-on.svg"
 STAR_OFF = ICONS / "star-off.svg"
 SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path {} d="{}"/></svg>\n'

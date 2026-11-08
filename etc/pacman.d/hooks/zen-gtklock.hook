@@ -7,4 +7,4 @@ Target = gtklock
 [Action]
 Description = Checking that zen-module matches the installed gtklock...
 When = PostTransaction
-Exec = /usr/local/bin/zen-gtklock-check
+Exec = /usr/local/lib/zen/gtklock-check

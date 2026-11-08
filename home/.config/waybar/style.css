@@ -130,7 +130,8 @@ window#waybar {
     border-left: none;
 }
 #custom-profile {
-    padding: 0 4px 0 10px;    color: #dedede;
+    padding: 0 4px 0 10px;
+    color: #dedede;
 }
 
 #custom-powerbtn {

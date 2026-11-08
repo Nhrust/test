@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""zen-profile — Waybar module: power-profiles-daemon profile icon.
+"""profile — Waybar module: power-profiles-daemon profile icon.
 
-  zen-profile              print the icon and follow changes (empty for balanced)
-  zen-profile next|up|down change the profile
+  profile              print the icon and follow changes (empty for balanced)
+  profile next|up|down change the profile
 """
 import subprocess
 import sys

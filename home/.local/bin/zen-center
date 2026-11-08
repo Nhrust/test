@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""zen-summary — notifications, calendar and weather in one Rofi menu.
+"""zen-center — notifications, calendar and weather in one Rofi menu.
 
-  zen-summary          open the menu (a second call closes it)
-  zen-summary dnd      Waybar module: do-not-disturb icon and unread count
-  zen-summary fetch    download the weather into the cache
+  zen-center          open the menu (a second call closes it)
+  zen-center dnd      Waybar module: do-not-disturb icon and unread count
+  zen-center fetch    download the weather into the cache
 """
 import calendar
 import datetime as dt
@@ -20,7 +20,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "zen/python"))
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
 import zen  # noqa: E402
 from zen import _, run  # noqa: E402
 
@@ -29,11 +29,11 @@ def N_(text):
     return text
 
 SELF = os.path.realpath(__file__)
-THEME = zen.CONFIG_HOME / "rofi/summary.rasi"
-CACHE = zen.RUNTIME / "zen-summary-weather.json"
-ERROR = zen.RUNTIME / "zen-summary-weather.err"
-HIDDEN = zen.RUNTIME / "zen-summary-hidden.json"
-READ = zen.RUNTIME / "zen-summary-read.json"
+THEME = zen.CONFIG_HOME / "rofi/center.rasi"
+CACHE = zen.RUNTIME / "zen-center-weather.json"
+ERROR = zen.RUNTIME / "zen-center-weather.err"
+HIDDEN = zen.RUNTIME / "zen-center-hidden.json"
+READ = zen.RUNTIME / "zen-center-read.json"
 CACHE_TTL = 15 * 60
 DND = "do-not-disturb"
 DND_SIGNAL = 11
@@ -135,7 +135,7 @@ def coordinates(data):
 
 
 def fetch():
-    lock = zen.RUNTIME / "zen-summary-fetch.lock"
+    lock = zen.RUNTIME / "zen-center-fetch.lock"
     try:
         if time.time() - lock.stat().st_mtime < 90:
             return 0
@@ -167,7 +167,7 @@ def fetch():
                 errors.append(f"met.no: {e}")
         if errors:
             ERROR.write_text("; ".join(errors))
-            print("zen-summary: " + "; ".join(errors), file=sys.stderr)
+            print("zen-center: " + "; ".join(errors), file=sys.stderr)
         else:
             ERROR.unlink(missing_ok=True)
         if data:

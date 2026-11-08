@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""zen-speed — Waybar module: download speed of the physical network cards."""
+"""speed — Waybar module: download speed of the physical network cards."""
 import glob
 import os
 import time

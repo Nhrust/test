@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "zen/python"))
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
 import zen  # noqa: E402
 from zen import _, run  # noqa: E402
 

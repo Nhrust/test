@@ -1,0 +1,19 @@
+#!/bin/sh
+# zen — maintenance commands of the Zen desktop.
+LIB="$HOME/.local/lib/zen"
+
+case ${1:-} in
+	palette) shift; exec "$LIB/palette" "$@" ;;
+	gtklock) shift; exec "$LIB/gtklock-build" "$@" ;;
+	*)
+		cat <<EOF
+usage: zen COMMAND
+
+  palette   write the palette from ~/.config/zen/zen.conf for Rofi and Waybar
+  gtklock   rebuild zen-module for the installed gtklock
+
+menus:  zen-center  zen-displays  zen-clipboard  zen-power
+other:  zen-lock  zen-step
+EOF
+		[ -z "${1:-}" ] || [ "$1" = help ] || [ "$1" = -h ] || [ "$1" = --help ] || exit 1 ;;
+esac

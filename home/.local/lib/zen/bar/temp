@@ -1,5 +1,5 @@
 #!/bin/sh
-# zen-temp — Waybar module: average temperature of the CPU, GPU and NVMe sensors.
+# temp — Waybar module: average temperature of the CPU, GPU and NVMe sensors.
 sum=0; n=0
 for h in /sys/class/hwmon/hwmon*; do
 	case "$(cat "$h/name" 2>/dev/null)" in

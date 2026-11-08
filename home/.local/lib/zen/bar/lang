@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""zen-lang — Waybar module: short name of the active keyboard layout (EN, RU, DE…).
+"""lang — Waybar module: short name of the active keyboard layout (EN, RU, DE…).
 
 Follows the Niri event stream; the short name is the XKB layout code from the
 XKB rules registry (evdev.xml), looked up by the layout description Niri reports.

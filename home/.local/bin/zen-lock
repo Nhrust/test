@@ -1,6 +1,6 @@
 #!/bin/sh
 # zen-lock — gtklock with zen-module when it was built for the installed gtklock.
-. "${XDG_DATA_HOME:-$HOME/.local/share}/zen/sh/zen.sh"
+. "$HOME/.local/lib/zen/zen.sh"
 pgrep -x gtklock >/dev/null && exit 0
 
 MODULE="$HOME/.local/lib/gtklock/zen-module.so"
@@ -12,5 +12,5 @@ if [ -f "$MODULE" ] && [ -n "$BUILT" ] && [ "$BUILT" = "$CURRENT" ]; then
 fi
 
 notify-send -u critical "$(gettext "zen-module is disabled")" \
-	"$(printf "$(gettext "Built for gtklock %s, installed %s. Rebuild it: zen-module-build")" "${BUILT:-?}" "${CURRENT:-?}")" 2>/dev/null
+	"$(printf "$(gettext "Built for gtklock %s, installed %s. Rebuild it: zen gtklock")" "${BUILT:-?}" "${CURRENT:-?}")" 2>/dev/null
 exec gtklock -d "$@"

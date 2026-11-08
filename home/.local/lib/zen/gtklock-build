@@ -1,7 +1,7 @@
 #!/bin/sh
-# zen-module-build — build zen-module for the installed gtklock.
+# gtklock-build — build zen-module for the installed gtklock.
 set -eu
-. "${XDG_DATA_HOME:-$HOME/.local/share}/zen/sh/zen.sh"
+. "$HOME/.local/lib/zen/zen.sh"
 
 SRC="${XDG_DATA_HOME:-$HOME/.local/share}/zen/src/zen-module.c"
 OUT="$HOME/.local/lib/gtklock"

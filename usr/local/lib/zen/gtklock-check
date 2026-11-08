@@ -5,7 +5,7 @@ for f in /home/*/.local/lib/gtklock/zen-module.built; do
 	BUILT=$(cat "$f")
 	if [ "$BUILT" != "$CURRENT" ]; then
 		echo "WARNING: gtklock is now v$CURRENT, but zen-module was built for v$BUILT ($f)."
-		echo "The screen will lock without the module. Rebuild it with zen-module-build."
+		echo "The screen will lock without the module. Rebuild it with zen gtklock."
 	fi
 done
 exit 0

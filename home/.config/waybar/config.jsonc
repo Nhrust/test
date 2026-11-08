@@ -64,7 +64,7 @@
         "tooltip": false
     },
     "custom/gpu": {
-        "exec": "~/.local/bin/zen-gpu",
+        "exec": "~/.local/lib/zen/bar/gpu",
         "on-click": "foot btop",
         "tooltip": false
     },
@@ -75,35 +75,35 @@
         "tooltip": false
     },
     "custom/temp": {
-        "exec": "~/.local/bin/zen-temp",
+        "exec": "~/.local/lib/zen/bar/temp",
         "on-click": "foot btop",
         "interval": 5,
         "tooltip": false,
         "format": "󰔏 {}"
     },
     "custom/speed": {
-        "exec": "~/.local/bin/zen-speed",
+        "exec": "~/.local/lib/zen/bar/speed",
         "on-click": "foot btop",
         "format": "󰓢 {}",
         "tooltip": false
     },
     "custom/date": {
-        "on-click": "~/.local/bin/zen-summary",
+        "on-click": "~/.local/bin/zen-center",
         "exec": "date '+%a %-d %b  %H:%M:%S' | sed -E 's/^(\\S+ \\S+ )(\\S+)/\\1\\L\\2/'",
         "interval": 1,
         "tooltip": false
     },
     "custom/weather": {
-        "exec": "~/.local/bin/zen-weather",
-        "on-click": "~/.local/bin/zen-summary",
+        "exec": "~/.local/lib/zen/bar/weather",
+        "on-click": "~/.local/bin/zen-center",
         "interval": 900,
         "tooltip": false
     },
     "custom/dnd": {
-        "exec": "~/.local/bin/zen-summary dnd",
+        "exec": "~/.local/bin/zen-center dnd",
         "signal": 11,
         "interval": 10,
-        "on-click": "~/.local/bin/zen-summary",
+        "on-click": "~/.local/bin/zen-center",
         "tooltip": false
     },
     "tray": {
@@ -111,12 +111,12 @@
         "spacing": 8
     },
     "custom/net": {
-        "exec": "~/.local/bin/zen-net icon",
+        "exec": "~/.local/lib/zen/bar/net icon",
         "interval": 5,
         "tooltip": false
     },
     "custom/lang": {
-        "exec": "~/.local/bin/zen-lang",
+        "exec": "~/.local/lib/zen/bar/lang",
         "on-click": "niri msg action switch-layout next",
         "restart-interval": 2,
         "tooltip": false
@@ -139,7 +139,7 @@
     "backlight": {
         "format": "{percent:>3}%",
         "on-update": "pkill -RTMIN+9 -x waybar",
-        "on-click": "~/.local/bin/zen-display",
+        "on-click": "~/.local/bin/zen-displays",
         "on-scroll-up": "~/.local/bin/zen-step brightness up",
         "on-scroll-down": "~/.local/bin/zen-step brightness down",
         "reverse-scrolling": true,
@@ -161,15 +161,15 @@
         ]
     },
     "custom/caffeine": {
-        "exec": "~/.local/bin/zen-display caffeine",
+        "exec": "~/.local/bin/zen-displays caffeine",
         "signal": 10,
         "interval": 30,
-        "on-click": "~/.local/bin/zen-display",
+        "on-click": "~/.local/bin/zen-displays",
         "tooltip": false
     },
     "image#brightness": {
-        "exec": "~/.local/bin/zen-level-icon brightness",
-        "on-click": "~/.local/bin/zen-display",
+        "exec": "~/.local/lib/zen/bar/level brightness",
+        "on-click": "~/.local/bin/zen-displays",
         "size": 14,
         "signal": 9,
         "interval": 30,
@@ -179,7 +179,7 @@
         "tooltip": false
     },
     "image#volume": {
-        "exec": "~/.local/bin/zen-level-icon volume",
+        "exec": "~/.local/lib/zen/bar/level volume",
         "size": 14,
         "signal": 8,
         "interval": 30,
@@ -200,27 +200,27 @@
     "custom/powerbtn": {
         "format": "󰐥",
         "on-click": "~/.local/bin/zen-power",
-        "on-click-right": "~/.local/bin/zen-profile next",
-        "on-scroll-up": "~/.local/bin/zen-profile up",
-        "on-scroll-down": "~/.local/bin/zen-profile down",
+        "on-click-right": "~/.local/lib/zen/bar/profile next",
+        "on-scroll-up": "~/.local/lib/zen/bar/profile up",
+        "on-scroll-down": "~/.local/lib/zen/bar/profile down",
         "reverse-scrolling": true,
         "tooltip": false
     },
     "custom/profile": {
-        "exec": "~/.local/bin/zen-profile",
+        "exec": "~/.local/lib/zen/bar/profile",
         "on-click": "~/.local/bin/zen-power",
-        "on-click-right": "~/.local/bin/zen-profile next",
-        "on-scroll-up": "~/.local/bin/zen-profile up",
-        "on-scroll-down": "~/.local/bin/zen-profile down",
+        "on-click-right": "~/.local/lib/zen/bar/profile next",
+        "on-scroll-up": "~/.local/lib/zen/bar/profile up",
+        "on-scroll-down": "~/.local/lib/zen/bar/profile down",
         "reverse-scrolling": true,
         "tooltip": false
     },
     "battery": {
         "bat": "BAT0",
         "on-click": "~/.local/bin/zen-power",
-        "on-click-right": "~/.local/bin/zen-profile next",
-        "on-scroll-up": "~/.local/bin/zen-profile up",
-        "on-scroll-down": "~/.local/bin/zen-profile down",
+        "on-click-right": "~/.local/lib/zen/bar/profile next",
+        "on-scroll-up": "~/.local/lib/zen/bar/profile up",
+        "on-scroll-down": "~/.local/lib/zen/bar/profile down",
         "reverse-scrolling": true,
         "interval": 30,
         "states": {

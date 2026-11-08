@@ -1,6 +1,6 @@
 [Unit]
 Description=Zen caffeine: no idle lock or screen-off
-Conflicts=swayidle.service
+Conflicts=zen-idle.service
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target

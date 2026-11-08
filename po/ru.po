@@ -392,5 +392,5 @@ msgstr "Подключи зарядку."
 msgid "zen-module is disabled"
 msgstr "zen-module отключён"
 
-msgid "Built for gtklock %s, installed %s. Rebuild it: zen-module-build"
-msgstr "Собран для gtklock %s, установлен %s. Пересобери: zen-module-build"
+msgid "Built for gtklock %s, installed %s. Rebuild it: zen gtklock"
+msgstr "Собран для gtklock %s, установлен %s. Пересобери: zen gtklock"

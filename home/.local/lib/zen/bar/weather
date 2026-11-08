@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""zen-weather — Waybar module: weather icon and temperature from wttr.in."""
+"""weather — Waybar module: weather icon and temperature from wttr.in."""
 import datetime
 import json
 import os
@@ -9,7 +9,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "zen/python"))
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
 import zen  # noqa: E402
 
 ICONS = {
@@ -73,4 +73,4 @@ try:
     main()
 except Exception as err:
     print("")
-    print(f"zen-weather: {err}", file=sys.stderr)
+    print(f"weather: {err}", file=sys.stderr)

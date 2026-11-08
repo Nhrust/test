@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""zen-menu-close — close an open Rofi menu when Niri focus moves to a window or workspace."""
+"""menu-close — close an open Rofi menu when Niri focus moves to a window or workspace."""
 import json
 import subprocess
 import sys

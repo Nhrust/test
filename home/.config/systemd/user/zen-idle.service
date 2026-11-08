@@ -1,0 +1,12 @@
+[Unit]
+Description=Zen idle: lock and screen-off timers (swayidle)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/swayidle -w timeout 180 '%h/.local/bin/zen-lock' before-sleep '%h/.local/bin/zen-lock' lock '%h/.local/bin/zen-lock'
+Restart=on-failure
+
+[Install]
+WantedBy=niri.service

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+network=$(cat /run/zen-network-status 2>/dev/null)
+[ -n "$network" ] || network="Off"
+
+battery="BAT --"
+
+for bat in /sys/class/power_supply/BAT*; do
+    [ -r "$bat/capacity" ] || continue
+
+    level=$(cat "$bat/capacity")
+    battery="BAT ${level}%"
+
+    if [ "$(cat "$bat/status")" = "Charging" ]; then
+        battery="${battery}+"
+    fi
+
+    break
+done
+
+printf '%s | %s\n' "$network" "$battery"

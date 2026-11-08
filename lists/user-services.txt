@@ -1,8 +1,8 @@
 waybar.service
-swayidle.service
+zen-idle.service
 plasma-polkit-agent.service
-niri-autowidth.service
-zen-battery-watch.service
+zen-autowidth.service
+zen-battery.service
 zen-cliphist.service
 zen-kanshi.service
 zen-menu-close.service

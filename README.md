@@ -8,7 +8,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Path | What |
 |---|---|
-| `home/` | files for `$HOME`: Niri, Waybar, Rofi, mako, gtklock, foot, fish, tmux, Neovim, Qt/GTK theme, the `zen-*` scripts |
+| `home/` | files for `$HOME`: Niri, Waybar, Rofi, mako, gtklock, foot, fish, tmux, Neovim, Qt/GTK theme, the zen scripts |
 | `etc/`, `usr/local/` | system files: pacman, makepkg, logind, sleep, UPower, NetworkManager, nftables, sshd (port 9728, only your user), Ly, zram, hooks |
 | `efi/limine.conf` | boot menu |
 | `hosts/NAME/` | what differs per machine: kernel command line, initramfs modules, hardware rules, snapshots, packages, place and monitors |
@@ -16,6 +16,17 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 | `lists/` | services to enable |
 | `po/` | translations of the scripts (gettext) |
 | `deploy.sh` | applies everything to an installed system |
+
+## Where things go in `$HOME`
+
+| Path | What |
+|---|---|
+| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen palette`, `zen gtklock`) |
+| `~/.local/lib/zen/` | internals: `bar/` (Waybar and tmux modules), background helpers, the shared `zen.py` and `zen.sh` |
+| `~/.local/share/zen/` | data: the gtklock module source, the terminal palette (`terminal.vtrgb`) |
+| `~/.config/zen/zen.conf` | your settings |
+| `~/.local/state/zen/` | what the menus remember: monitor modes, pinned clipboard entries |
+| `zen-*.service` | user services: `zen-idle`, `zen-caffeine`, `zen-autowidth`, `zen-battery`, `zen-cliphist`, `zen-kanshi`, `zen-menu-close` |
 
 ## Deploy
 
@@ -38,4 +49,4 @@ and builds the gtklock module.
 `~/.config/zen/zen.conf` (example in `home/.config/zen/zen.conf.example`):
 locale for the zen scripts, weather location and contact, and the palette.
 Language, units, first weekday and 12/24-hour time follow the locale.
-Run `zen-palette` after changing the palette.
+Run `zen palette` after changing the palette.
