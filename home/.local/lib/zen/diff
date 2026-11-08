@@ -48,7 +48,8 @@ def files(root):
 def expected(repo, host):
     """target → (kind, bytes) the way deploy.sh and zen apply would write it."""
     out = {}
-    subst = {b"@HOME@": str(HOME).encode(), b"@USER@": getpass.getuser().encode()}
+    # spelled in two parts so that deploy.sh does not substitute them here
+    subst = {b"@" + b"HOME@": str(HOME).encode(), b"@" + b"USER@": getpass.getuser().encode()}
     trees = [("home", HOME), ("etc", Path("/etc")), ("usr/local", Path("/usr/local"))]
     for base in (repo, repo / "hosts" / host):
         for sub, target in trees:
