@@ -162,7 +162,7 @@ switch-events {
 binds {
 
     Mod+T { spawn "foot"; }
-    Mod+Space { spawn "rofi" "-show" "drun" "-replace"; }
+    Mod+Space { spawn-sh "~/.local/bin/zen-apps"; }
     Mod+L { spawn-sh "~/.local/bin/zen-lock"; }
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
     

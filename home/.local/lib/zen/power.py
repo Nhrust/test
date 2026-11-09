@@ -99,6 +99,7 @@ def tile(label, key, active=False, urgent=False):
 def show(pending=""):
     ensure_icons()
     option("no-custom", "true")
+    option("use-hot-keys", "true")
     option("keep-selection", "true")
     option("data", pending)
     profile = profile_get()
@@ -163,6 +164,7 @@ def launch():
            "-replace", "-show-icons"]
     if THEME.exists():
         cmd += ["-theme", str(THEME)]
+    cmd += zen.switch_args(())
     os.execvp("rofi", cmd)
 
 
@@ -172,6 +174,8 @@ def main():
     if sys.argv[1] != "list":
         sys.exit(__doc__)
     retv = int(os.environ.get("ROFI_RETV", "0"))
+    if zen.switch(retv, "zen-power"):
+        return 0
     info = os.environ.get("ROFI_INFO", "")
     if retv == SELECT and info:
         select(info)

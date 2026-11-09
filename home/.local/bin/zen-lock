@@ -1,16 +1,29 @@
 #!/bin/sh
 # zen-lock — gtklock with zen-module when it was built for the installed gtklock.
+# While it is locked, 10 seconds without input turn the monitors and the
+# keyboard backlight off; input brings both back.
 . "$HOME/.local/lib/zen/zen.sh"
 pgrep -x gtklock >/dev/null && exit 0
 
 MODULE="$HOME/.local/lib/gtklock/zen-module.so"
 BUILT=$(cat "$HOME/.local/lib/gtklock/zen-module.built" 2>/dev/null)
 CURRENT=$(gtklock -v 2>/dev/null | sed -n 's/^gtklock v\([0-9]*\)\..*/\1/p')
+SCREEN="$HOME/.local/lib/zen/screen"
 
 if [ -f "$MODULE" ] && [ -n "$BUILT" ] && [ "$BUILT" = "$CURRENT" ]; then
-	exec gtklock -d -m powerbar-module -m "$MODULE" "$@"
+	gtklock -d -m powerbar-module -m "$MODULE" "$@" || exit
+else
+	notify-send -u critical "$(gettext "zen-module is disabled")" \
+		"$(printf "$(gettext "Built for gtklock %s, installed %s. Rebuild it: zen gtklock")" "${BUILT:-?}" "${CURRENT:-?}")" 2>/dev/null
+	gtklock -d "$@" || exit
 fi
 
-notify-send -u critical "$(gettext "zen-module is disabled")" \
-	"$(printf "$(gettext "Built for gtklock %s, installed %s. Rebuild it: zen gtklock")" "${BUILT:-?}" "${CURRENT:-?}")" 2>/dev/null
-exec gtklock -d "$@"
+# gtklock -d returns once the screen is locked; watch it until it is unlocked
+pid=$(pgrep -nx gtklock) || exit 0
+setsid -f sh -c '
+	swayidle timeout 10 "$1 off" resume "$1 on" &
+	idle=$!
+	tail --pid="$2" -f /dev/null
+	kill "$idle"
+	"$1" on
+' sh "$SCREEN" "$pid" >/dev/null 2>&1

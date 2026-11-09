@@ -610,6 +610,7 @@ def launch():
     if THEME.exists():
         title_text = _("Notifications").replace('"', "")
         cmd += ["-theme", str(THEME), "-theme-str", f'textbox-title {{ content: "{title_text}"; }}']
+    cmd += zen.switch_args({2, 4, 5, 6})
     os.execvp("rofi", cmd)
 
 
@@ -643,6 +644,8 @@ def main():
     if sys.argv[1] != "list":
         sys.exit(__doc__)
     retv = int(os.environ.get("ROFI_RETV", "0"))
+    if zen.switch(retv, "zen-center"):
+        return 0
     data = (os.environ.get("ROFI_DATA") or "0").split(":")
     try:
         offset = int(data[0])

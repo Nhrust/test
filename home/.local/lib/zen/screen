@@ -1,0 +1,15 @@
+#!/bin/sh
+# screen — turn the monitors and the keyboard backlight off together, and the backlight back on.
+#   screen off   monitors off (Niri), keyboard backlight saved and set to 0
+#   screen on    keyboard backlight restored; Niri turns the monitors on by itself on input
+KBD='*::kbd_backlight'
+case ${1:-} in
+	off)
+		brightnessctl --quiet --device="$KBD" --save set 0
+		niri msg action power-off-monitors ;;
+	on)
+		brightnessctl --quiet --device="$KBD" --restore ;;
+	*)
+		echo "usage: screen off|on" >&2; exit 2 ;;
+esac
+exit 0

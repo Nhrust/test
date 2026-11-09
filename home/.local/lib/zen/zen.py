@@ -94,6 +94,51 @@ def colors():
     return out
 
 
+# ---------------------------------------------------------------- menu switcher
+
+MENUS = Path(__file__).with_name("menus")
+SWITCH_FIRST = 11
+
+
+def menus():
+    """[(launcher, icon)] in switcher order, from ~/.local/lib/zen/menus."""
+    out = []
+    try:
+        lines = MENUS.read_text().splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        parts = line.split()
+        if len(parts) == 2 and not line.startswith("#"):
+            out.append((parts[0], parts[1]))
+    return out
+
+
+def switch_args(used=()):
+    """Rofi options: Alt+1… on kb-custom-11…; frees the default Alt+digit
+    bindings of kb-custom-1…9 the menu does not use itself."""
+    args = []
+    items = menus()
+    for n in range(1, min(len(items), 9) + 1):
+        if n not in used:
+            args += [f"-kb-custom-{n}", ""]
+    for i, _item in enumerate(items[:9]):
+        args += [f"-kb-custom-{SWITCH_FIRST + i}", f"Alt+{i + 1}"]
+    return args
+
+
+def switch(retv, current):
+    """Open another menu for an Alt+digit or switcher click; True when it did."""
+    i = retv - 9 - SWITCH_FIRST
+    items = menus()
+    if not 0 <= i < len(items) or items[i][0] == current:
+        return False
+    launcher = Path.home() / ".local/bin" / items[i][0]
+    subprocess.Popen([str(launcher)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+    return True
+
+
 _TOKEN = re.compile(r"\{\{\s*([a-z0-9]+)(?:\|([a-z]+)(?::([0-9a-f]{2}))?)?\s*\}\}")
 
 

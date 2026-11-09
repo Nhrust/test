@@ -195,6 +195,15 @@ def systemctl(st):
 
 
 def brightnessctl(st):
+    if any(a.startswith("--device=") and "kbd" in a for a in ARGS):
+        kbd = st.setdefault("kbd", {"level": 1, "saved": None})
+        if "--save" in ARGS:
+            kbd["saved"] = kbd["level"]
+        if "set" in ARGS:
+            kbd["level"] = int(ARGS[-1])
+        if "--restore" in ARGS and kbd["saved"] is not None:
+            kbd["level"] = kbd["saved"]
+        return 0
     if "-m" in ARGS:
         print(f"amdgpu_bl1,backlight,{st['brightness'] * 255 // 100},{st['brightness']}%,255")
     elif "set" in ARGS:
@@ -242,6 +251,10 @@ def sudo(st):
     return subprocess.run(args).returncode if args else 0
 
 
+def pgrep(st):
+    return 1
+
+
 def passive(st):
     return 0
 
@@ -249,7 +262,7 @@ def passive(st):
 HANDLERS = {
     "makoctl": makoctl, "wpctl": wpctl, "pw-dump": pw_dump, "busctl": busctl, "cliphist": cliphist,
     "niri": niri, "systemctl": systemctl, "brightnessctl": brightnessctl, "sudo": sudo,
-    "playerctl": playerctl, "gtklock": gtklock, "pacman": pacman,
+    "playerctl": playerctl, "pgrep": pgrep, "gtklock": gtklock, "pacman": pacman,
 }
 
 

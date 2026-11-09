@@ -1,7 +1,11 @@
 @import "zen.rasi"
 
+window {
+    height: calc( 141px + 1em + 10 * ( 1.2em floor 1px ) + 1em + 19px );
+}
+
 mainbox {
-    children: [ listview ];
+    children: [ switcher, listview ];
 }
 
 listview {
@@ -16,7 +20,8 @@ element {
     orientation: vertical;
     children: [ element-icon, element-text ];
     spacing: 12px;
-    padding: 30px 4px;
+    /* two rows of tiles fill the window, which is as tall as the other menus */
+    padding: calc( ( 101px + 1em + 10 * ( 1.2em floor 1px ) ) / 4 - 30px - ( 1.2em floor 1px ) / 2 ) 4px;
     border: 1px;
     border-color: @zen-line;
 }
@@ -51,4 +56,8 @@ element normal.urgent, element alternate.urgent, element selected.urgent {
     background-color: transparent;
     text-color: @zen-error;
     border-color: @zen-error;
+}
+
+button-zen-power {
+    text-color: @zen-accent;
 }

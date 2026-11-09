@@ -222,6 +222,7 @@ def launch():
         clear = _("Clear").replace('"', "")
         cmd += ["-theme", str(THEME), "-theme-str", f'entry {{ placeholder: "{hint}"; }}',
                 "-theme-str", f'button-wipe {{ content: "{clear}"; }}']
+    cmd += zen.switch_args({1, 2, 4, 5})
     os.execvp("rofi", cmd)
 
 
@@ -231,6 +232,8 @@ def main():
     if sys.argv[1] != "list":
         sys.exit(__doc__)
     retv = int(os.environ.get("ROFI_RETV", "0"))
+    if zen.switch(retv, "zen-clipboard"):
+        return 0
     info = os.environ.get("ROFI_INFO", "")
     retv = {LEFT: CUSTOM_1, RIGHT: DELETE}.get(retv, retv)
     if retv == CUSTOM_2:

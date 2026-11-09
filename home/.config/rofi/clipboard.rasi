@@ -1,7 +1,7 @@
 @import "zen.rasi"
 
 mainbox {
-    children: [ inputbar, listview ];
+    children: [ switcher, inputbar, listview ];
 }
 
 inputbar {
@@ -53,4 +53,8 @@ element-icon {
     padding: 0px 0px 0px 14px;
     background-color: transparent;
     vertical-align: 0.5;
+}
+
+button-zen-clipboard {
+    text-color: @zen-accent;
 }

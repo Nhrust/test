@@ -2,7 +2,7 @@
 
 mainbox {
     orientation: vertical;
-    children: [ inputbar, body ];
+    children: [ switcher, inputbar, body ];
 }
 inputbar {
     children: [ textbox-title, calnav ];
@@ -79,4 +79,8 @@ textbox {
     horizontal-align: 0.5;
     font: "JetBrainsMono Nerd Font 9";
     text-color: @zen-fg;
+}
+
+button-zen-center {
+    text-color: @zen-accent;
 }

@@ -441,9 +441,59 @@ class TestPanel(Zen):
         self.run_cmd(self.home / ".local/bin/zen-step", "brightness", "down")
         self.assertEqual(self.load()["brightness"], 45)
 
+    def test_screen_off_and_on(self):
+        screen = self.home / ".local/lib/zen/screen"
+        self.run_cmd(screen, "off")
+        self.assertEqual(self.load()["kbd"]["level"], 0)
+        self.assertIn("niri msg action power-off-monitors", self.calls("niri"))
+        self.run_cmd(screen, "on")
+        self.assertEqual(self.load()["kbd"]["level"], 1)
+
+    def test_lock(self):
+        built = self.home / ".local/lib/gtklock"
+        built.mkdir(parents=True)
+        (built / "zen-module.so").write_text("")
+        (built / "zen-module.built").write_text("5\n")
+        self.run_cmd(self.home / ".local/bin/zen-lock")
+        self.assertIn(f"gtklock -d -m powerbar-module -m {built}/zen-module.so", self.calls("gtklock"))
+        self.assertEqual(self.calls("notify-send"), [])
+
     def test_shell_modules(self):
         for name in ("temp", "net", "tmux"):
             self.run_cmd(self.home / ".local/lib/zen/bar" / name)
+
+
+class TestSwitcher(Zen):
+
+    def wait_for(self, name, text):
+        for _x in range(50):
+            if any(text in c for c in self.calls(name)):
+                return True
+            time.sleep(0.1)
+        return False
+
+    def test_alt_digit_opens_another_menu(self):
+        """Alt+5 (kb-custom-15, ROFI_RETV 24) in the power menu opens the sound menu."""
+        _o, rows = self.menu("zen-power", 24, "balanced")
+        self.assertTrue(self.wait_for("rofi", "zen-audio list"))
+
+    def test_own_icon_does_nothing(self):
+        self.menu("zen-power", 25, "balanced")
+        time.sleep(0.5)
+        self.assertEqual(self.calls("rofi"), [])
+
+    def test_every_menu_takes_the_keys(self):
+        for script in ("zen-center", "zen-audio", "zen-displays", "zen-clipboard", "zen-power"):
+            options, _rows = self.menu(script)
+            self.assertEqual(options.get("use-hot-keys"), "true", script)
+
+    def test_theme(self):
+        self.run_cmd(self.home / ".local/bin/zen", "apply", "--user")
+        text = (self.home / ".config/rofi/zen-switcher.rasi").read_text()
+        self.assertIn('action: "kb-custom-16"', text)
+        for name in ("center", "audio", "displays", "clipboard", "power"):
+            rasi = (self.home / f".config/rofi/{name}.rasi").read_text()
+            self.assertIn("switcher", rasi, name)
 
 
 class TestConfigs(Zen):

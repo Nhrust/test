@@ -180,15 +180,13 @@ enable_units() {
 			say "- $unit: not installed, skipped"
 			continue
 		fi
-		# shellcheck disable=SC2086
-		state=$(${act%% enable*} is-enabled "$unit" 2>/dev/null) || true
-		case $state in
-			static|indirect|generated|alias)
-				say "- $unit: $state, started by the units that need it" ;;
-			*)
-				# shellcheck disable=SC2086
-				run $act ;;
-		esac
+		# a unit without an [Install] section is started by the units that need it
+		if $check 2>/dev/null | grep -q '^\[Install\]'; then
+			# shellcheck disable=SC2086
+			run $act
+		else
+			say "- $unit: started by the units that need it"
+		fi
 	done
 }
 run systemctl --user daemon-reload

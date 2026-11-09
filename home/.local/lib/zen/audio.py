@@ -499,6 +499,7 @@ def launch():
            "-kb-custom-4", "Left", "-kb-custom-5", "Right"]
     if THEME.exists():
         cmd += ["-theme", str(THEME)]
+    cmd += zen.switch_args({3, 4, 5})
     os.execvp("rofi", cmd)
 
 
@@ -518,6 +519,8 @@ def main():
     if cmd != "list":
         sys.exit(__doc__)
     retv = int(os.environ.get("ROFI_RETV", "0"))
+    if zen.switch(retv, "zen-audio"):
+        return 0
     info = os.environ.get("ROFI_INFO", "")
     view = os.environ.get("ROFI_DATA") or "main"
     focus = None

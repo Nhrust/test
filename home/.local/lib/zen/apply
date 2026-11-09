@@ -33,8 +33,25 @@ def generated(colors):
     yield (zen.CONFIG_HOME / "rofi/zen-colors.rasi",
            "* {\n" + "".join(f"    zen-{k}: {v};\n" for k, v in rofi.items()) + "}\n")
     yield zen.CONFIG_HOME / "rofi/zen-text.rasi", f'entry {{\n    placeholder: "{search}";\n}}\n'
+    yield zen.CONFIG_HOME / "rofi/zen-switcher.rasi", switcher()
     yield (zen.CONFIG_HOME / "waybar/zen-colors.css",
            "".join(f"@define-color zen_{k} {v};\n" for k, v in colors.items()))
+
+
+def switcher():
+    """The row of menu icons on top of every menu, from ~/.local/lib/zen/menus.
+    Each menu's theme puts "switcher" first in its mainbox and colours its own icon."""
+    items = zen.menus()
+    names = [f"button-{name}" for name, _icon in items]
+    out = ["switcher {", "    orientation: horizontal;", "    expand: false;", "    spacing: 0px;",
+           "    padding: 0px 0px 6px 0px;", "    border: 0px 0px 1px 0px;", "    border-color: @zen-line;",
+           f"    children: [ {', '.join(names)} ];", "}"]
+    out += [", ".join(names) + " {", "    expand: true;", "    horizontal-align: 0.5;",
+            "    padding: 2px 0px;", "    text-color: @zen-muted;", "    cursor: pointer;", "}"]
+    for i, (name, icon) in enumerate(items):
+        out += [f"button-{name} {{", f'    content: "{icon}";',
+                f'    action: "kb-custom-{zen.SWITCH_FIRST + i}";', "}"]
+    return "\n".join(out) + "\n"
 
 
 def templates(root, target):

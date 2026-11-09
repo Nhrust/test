@@ -1,11 +1,11 @@
 @import "zen.rasi"
 
 window {
-    height: calc( 141px + 1em + 10 * ( 1.2em floor 1px ) );
+    height: calc( 141px + 1em + 10 * ( 1.2em floor 1px ) + 1em + 19px );
 }
 
 mainbox {
-    children: [ inputbar, message, listview ];
+    children: [ switcher, inputbar, message, listview ];
 }
 
 inputbar {
@@ -22,4 +22,8 @@ textbox {
     font: "JetBrainsMono Nerd Font 10";
     text-color: @zen-muted;
     horizontal-align: 0.5;
+}
+
+button-zen-audio {
+    text-color: @zen-accent;
 }
