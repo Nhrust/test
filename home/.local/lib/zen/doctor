@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""doctor — check that the Zen desktop is whole; changes nothing.
+
+  zen doctor
+
+Services that should run, the lock screen module, the colours, the panel
+modules, the difference from the repository, and configuration files that
+pacman left as .pacnew. Exits with 1 when something needs attention.
+"""
+import glob
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
+import zen  # noqa: E402
+from zen import _, run  # noqa: E402
+
+LIB = Path.home() / ".local/lib/zen"
+BIN = Path.home() / ".local/bin"
+TTY = sys.stdout.isatty()
+PAL = zen.palette()
+
+# units that run in every session; zen-idle and zen-caffeine take turns
+USER_UNITS = ["waybar.service", "zen-autowidth.service", "zen-battery.service",
+              "zen-cliphist.service", "zen-kanshi.service", "zen-menu-close.service",
+              "plasma-polkit-agent.service"]
+SYSTEM_UNITS = ["NetworkManager.service", "systemd-resolved.service", "nftables.service",
+                "sshd.service", "bluetooth.service", "power-profiles-daemon.service",
+                "ly@tty2.service", "zen-console.service"]
+PANEL = [("bar/mic", []), ("bar/level", ["volume"]), ("bar/level", ["brightness"]),
+         ("bar/temp", []), ("bar/net", ["icon"]), ("bar/tmux", [])]
+
+problems = 0
+
+
+def paint(text, role):
+    if not TTY:
+        return text
+    h = PAL[role].lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return f"\033[38;2;{r};{g};{b}m{text}\033[0m"
+
+
+def report(ok, text, hint=""):
+    global problems
+    mark = paint("✓", "success") if ok else paint("✗", "critical")
+    print(f"  {mark} {text}" + (f"  {paint(hint, 'muted')}" if hint and not ok else ""))
+    if not ok:
+        problems += 1
+
+
+def section(title):
+    print(paint(title, "accent"))
+
+
+def active(unit, user):
+    cmd = ["systemctl", "--user"] if user else ["systemctl"]
+    return run(*cmd, "is-active", unit).stdout.strip()
+
+
+def installed(unit, user):
+    cmd = ["systemctl", "--user"] if user else ["systemctl"]
+    return run(*cmd, "cat", unit).returncode == 0
+
+
+def services():
+    section(_("Services"))
+    for unit in USER_UNITS:
+        if installed(unit, True):
+            state = active(unit, True)
+            report(state == "active", f"{unit}: {state}", f"systemctl --user status {unit}")
+    idle, caffeine = active("zen-idle.service", True), active("zen-caffeine.service", True)
+    report("active" in (idle, caffeine), f"zen-idle.service: {idle}" +
+           (" (caffeine)" if caffeine == "active" else ""), "systemctl --user start zen-idle.service")
+    for unit in SYSTEM_UNITS:
+        if installed(unit, False):
+            state = active(unit, False)
+            ok = state == "active" or (unit == "zen-console.service" and state == "inactive" and
+                                       run("systemctl", "is-enabled", unit).stdout.strip() == "enabled")
+            report(ok, f"{unit}: {state}", f"systemctl status {unit}")
+    for user in (True, False):
+        cmd = ["systemctl", "--user"] if user else ["systemctl"]
+        failed = run(*cmd, "--failed", "--no-legend", "--plain").stdout.split("\n")
+        failed = [line.split()[0] for line in failed if line.strip()]
+        label = _("failed user units") if user else _("failed system units")
+        report(not failed, f"{label}: {', '.join(failed) or _('none')}",
+               "journalctl --user -b -u UNIT" if user else "journalctl -b -u UNIT")
+
+
+def lock_screen():
+    section(_("Lock screen"))
+    res = run(str(LIB / "gtklock-build"), "--check")
+    report(res.returncode == 0, _("zen-module matches the installed gtklock"), "zen gtklock")
+
+
+def colours():
+    section(_("Colours"))
+    res = run(str(LIB / "apply"), "--check")
+    stale = [line for line in res.stdout.splitlines() if line]
+    report(not stale, _("files follow zen.conf") if not stale else
+           _("out of date: {}").format(", ".join(stale)), "zen apply")
+    for line in res.stderr.splitlines():
+        print(f"    {paint(line, 'muted')}")
+
+
+def panel():
+    section(_("Panel modules"))
+    for script, args in PANEL:
+        path = LIB / script
+        if not path.exists():
+            continue
+        try:
+            res = subprocess.run([str(path), *args], capture_output=True, text=True, timeout=5)
+            ok, detail = res.returncode == 0, res.stderr.strip().splitlines()[-1:] or [""]
+        except subprocess.TimeoutExpired:
+            ok, detail = False, [_("no answer in 5 s")]
+        report(ok, " ".join([script, *args]), detail[0])
+    weather_err = zen.RUNTIME / "zen-center-weather.err"
+    if weather_err.exists() and weather_err.read_text().strip():
+        report(False, _("weather"), weather_err.read_text().strip().splitlines()[0])
+
+
+def repository():
+    section(_("Repository"))
+    res = run(str(LIB / "diff"))
+    lines = [line for line in res.stdout.splitlines() if line]
+    if res.returncode == 2:
+        report(True, _("not deployed from a repository"))
+        return
+    report(res.returncode == 0, lines[0] if res.returncode == 0 else
+           _("{} files differ from the repository").format(len(lines)), "zen diff")
+    if res.returncode != 0:
+        for line in lines[:10]:
+            print(f"    {paint(line, 'muted')}")
+
+
+def pacnew():
+    section(_("Package configuration"))
+    found = sorted(glob.glob("/etc/**/*.pacnew", recursive=True) +
+                   glob.glob("/etc/**/*.pacsave", recursive=True))
+    report(not found, _("no .pacnew or .pacsave files") if not found else
+           _("to merge: {}").format(", ".join(found)), "pacdiff (pacman-contrib)")
+
+
+def main():
+    for check in (services, lock_screen, colours, panel, repository, pacnew):
+        check()
+    print()
+    if problems:
+        print(paint(zen.ngettext("{} thing needs attention", "{} things need attention",
+                                 problems).format(problems), "critical"))
+        return 1
+    print(paint(_("Everything is in order"), "success"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

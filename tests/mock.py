@@ -184,6 +184,7 @@ def systemctl(st):
     active = st["systemd"]["active"]
     a = [x for x in ARGS if not x.startswith("--")]
     if a[0] == "is-active":
+        print("active" if a[1] in active else "inactive")
         return 0 if a[1] in active else 3
     if a[0] == "start":
         if a[1] == "zen-caffeine.service":
@@ -201,6 +202,39 @@ def brightnessctl(st):
     return 0
 
 
+def playerctl(st):
+    p = st.get("player")
+    if not p:
+        print("No players found", file=sys.stderr)
+        return 1
+    cmd = ARGS[0]
+    if cmd == "metadata":
+        fmt = ARGS[ARGS.index("--format") + 1]
+        out = fmt
+        for key, value in (("status", p["status"]), ("artist", p["artist"]),
+                           ("title", f'Song {p["track"]}'), ("playerName", p["name"])):
+            out = out.replace("{{%s}}" % key, value)
+        print(out)
+    elif cmd == "play-pause":
+        p["status"] = "Paused" if p["status"] == "Playing" else "Playing"
+    elif cmd == "next":
+        p["track"] += 1
+    elif cmd == "previous":
+        p["track"] = max(1, p["track"] - 1)
+    return 0
+
+
+def gtklock(st):
+    print("gtklock v5.0.0")
+    return 0
+
+
+def pacman(st):
+    if ARGS[:1] == ["-Q"]:
+        print(f"{ARGS[1]} 5.0.1-1")
+    return 0
+
+
 def sudo(st):
     args = ARGS
     while args and args[0].startswith("-"):
@@ -215,6 +249,7 @@ def passive(st):
 HANDLERS = {
     "makoctl": makoctl, "wpctl": wpctl, "pw-dump": pw_dump, "busctl": busctl, "cliphist": cliphist,
     "niri": niri, "systemctl": systemctl, "brightnessctl": brightnessctl, "sudo": sudo,
+    "playerctl": playerctl, "gtklock": gtklock, "pacman": pacman,
 }
 
 

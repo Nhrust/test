@@ -2,6 +2,7 @@
 # gtklock-build — build zen-module for the installed gtklock.
 #   gtklock-build           only when gtklock, its powerbar module or the source changed
 #   gtklock-build --force   always
+#   gtklock-build --check   exit 0 when the module is up to date, 1 when it needs a build
 set -eu
 . "$HOME/.local/lib/zen/zen.sh"
 
@@ -14,8 +15,15 @@ minor=${ver#* }
 pb=$(pacman -Q gtklock-powerbar-module | awk '{print $2}' | sed 's/-[0-9]*$//')
 stamp="gtklock $major.$minor powerbar $pb source $(sha256sum < "$SRC" | cut -d' ' -f1)"
 
-if [ "${1:-}" != --force ] && [ -f "$OUT/zen-module.so" ] &&
-	[ "$(cat "$OUT/zen-module.stamp" 2>/dev/null)" = "$stamp" ]; then
+current=
+if [ -f "$OUT/zen-module.so" ] && [ "$(cat "$OUT/zen-module.stamp" 2>/dev/null)" = "$stamp" ]; then
+	current=1
+fi
+if [ "${1:-}" = --check ]; then
+	[ -n "$current" ]
+	exit
+fi
+if [ "${1:-}" != --force ] && [ -n "$current" ]; then
 	echo "$OUT/zen-module.so is up to date (gtklock $major.$minor)"
 	exit 0
 fi

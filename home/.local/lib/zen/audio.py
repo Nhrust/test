@@ -5,6 +5,7 @@
   zen-audio mute         mute or unmute the default output (XF86AudioMute)
 
 Devices keep the names PipeWire gives them. Levels go in steps of 5% up to 100%.
+While a player plays, the first row shows it: Enter pauses, ← and → change the track.
 """
 import functools
 import html
@@ -12,6 +13,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import zen
@@ -117,6 +119,31 @@ def toggle_mute(nid):
 
 def signal_mic():
     run("pkill", f"-RTMIN+{MIC_SIGNAL}", "-x", "waybar")
+
+
+# ---------------------------------------------------------------- media player
+
+PLAYING, PAUSED = "\U000F040A", "\U000F03E4"
+
+
+def player():
+    """What the active MPRIS player plays: {status, artist, title, name}, or None."""
+    res = run("playerctl", "metadata", "--format",
+              "{{status}}\t{{artist}}\t{{title}}\t{{playerName}}")
+    parts = res.stdout.rstrip("\n").split("\t")
+    if res.returncode != 0 or len(parts) != 4 or parts[0] not in ("Playing", "Paused"):
+        return None
+    return dict(zip(("status", "artist", "title", "name"), parts))
+
+
+def player_do(action):
+    """play-pause, previous or next; waits briefly so the menu shows the result."""
+    before = player()
+    run("playerctl", action)
+    for _x in range(8):
+        time.sleep(0.05)
+        if player() != before:
+            break
 
 
 # ---------------------------------------------------------------- Bluetooth
@@ -287,6 +314,11 @@ def option(key, value):
 
 def show_main(g, focus):
     menu = Menu("main", _("sound"), g)
+    media = player()
+    if media:
+        icon = PLAYING if media["status"] == "Playing" else PAUSED
+        what = " — ".join(x for x in (media["artist"], media["title"]) if x) or media["name"]
+        menu.add(f"{icon}  {esc(what)}", "media:", active=media["status"] == "Playing")
     sink, source = g.default_sink, g.default_source
     menu.add(f'{esc(_("Output"))} · {esc(g.name(sink)) if sink else "—"}  ›', "view:outputs")
     if sink:
@@ -421,6 +453,9 @@ def act(info):
     if kind == "app":
         toggle_mute(int(rest))
         return None, info
+    if kind == "media":
+        player_do("play-pause")
+        return None, info
     if kind == "bt":
         path, _x, connected = rest.rpartition(":")
         if not bt_busy():
@@ -436,6 +471,8 @@ def side_keys(info, delta):
         adjust(what, int(nid), delta)
     elif kind == "app":
         step_level(int(rest), delta)
+    elif kind == "media":
+        player_do("previous" if delta < 0 else "next")
 
 
 def our_rofi():

@@ -481,3 +481,66 @@ msgid_plural "{} connected"
 msgstr[0] "{} подключено"
 msgstr[1] "{} подключено"
 msgstr[2] "{} подключено"
+
+msgid "Colours"
+msgstr "Цвета"
+
+msgid "Everything is in order"
+msgstr "Всё в порядке"
+
+msgid "Lock screen"
+msgstr "Экран блокировки"
+
+msgid "Package configuration"
+msgstr "Конфигурация пакетов"
+
+msgid "Panel modules"
+msgstr "Модули панели"
+
+msgid "Repository"
+msgstr "Репозиторий"
+
+msgid "Services"
+msgstr "Сервисы"
+
+msgid "failed system units"
+msgstr "упавшие системные юниты"
+
+msgid "failed user units"
+msgstr "упавшие пользовательские юниты"
+
+msgid "files follow zen.conf"
+msgstr "файлы соответствуют zen.conf"
+
+msgid "no .pacnew or .pacsave files"
+msgstr "файлов .pacnew и .pacsave нет"
+
+msgid "no answer in 5 s"
+msgstr "нет ответа за 5 с"
+
+msgid "not deployed from a repository"
+msgstr "система не развёрнута из репозитория"
+
+msgid "out of date: {}"
+msgstr "устарели: {}"
+
+msgid "to merge: {}"
+msgstr "нужно слить: {}"
+
+msgid "weather"
+msgstr "погода"
+
+msgid "zen-module matches the installed gtklock"
+msgstr "zen-module соответствует установленному gtklock"
+
+msgid "{} files differ from the repository"
+msgstr "файлов отличается от репозитория: {}"
+
+msgid "{} thing needs attention"
+msgid_plural "{} things need attention"
+msgstr[0] "{} пункт требует внимания"
+msgstr[1] "{} пункта требуют внимания"
+msgstr[2] "{} пунктов требуют внимания"
+
+msgid "none"
+msgstr "нет"

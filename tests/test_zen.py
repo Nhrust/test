@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 MOCKED = ["makoctl", "wpctl", "pw-dump", "busctl", "cliphist", "wl-copy", "niri", "systemctl",
           "brightnessctl", "ddcutil", "kanshictl", "pkill", "pgrep", "notify-send", "sudo",
-          "nmcli", "gsettings", "setvtrgb", "rofi"]
+          "nmcli", "gsettings", "setvtrgb", "rofi", "playerctl", "gtklock", "pacman"]
 
 SELECT, DELETE, ESC, LEFT, RIGHT, TAB = 1, 3, 12, 13, 14, 15
 
@@ -64,6 +64,7 @@ def base_state():
         "niri": {"outputs": {"eDP-1": json.loads((FIXTURES / "outputs.json").read_text())["eDP-1"]},
                  "windows": [{"id": 5, "app_id": "org.telegram.desktop", "title": "Telegram"}]},
         "systemd": {"active": ["zen-idle.service"]},
+        "player": {"status": "Playing", "artist": "Artist", "track": 1, "name": "mpv"},
         "brightness": 50,
     }
 
@@ -270,9 +271,12 @@ class TestAudio(Zen):
     def test_main(self):
         options, rows = self.menu("zen-audio")
         texts = self.texts(rows)
-        self.assertIn("FLOW 8 Multichannel", texts[0])
-        self.assertIn("60%", texts[1])
-        self.assertIn("Digital Microphone", texts[3])
+        self.assertEqual(rows[0][1]["info"], "media:")
+        self.assertIn("Artist — Song 1", texts[0])
+        self.assertIn("FLOW 8 Multichannel", texts[1])
+        self.assertIn("60%", texts[2])
+        self.assertIn("Digital Microphone", texts[4])
+        self.assertEqual(rows[int(options["new-selection"])][1]["info"], "view:outputs")
         self.assertTrue(any(t.startswith("Applications · 2") for t in texts))
         self.assertTrue(any(t.startswith("Bluetooth · 1 connected") for t in texts))
         self.assertIn("60%", options["message"])
@@ -333,6 +337,17 @@ class TestAudio(Zen):
         self.assertTrue(any("Connected: Pixel Buds" in c for c in self.calls("notify-send")))
         self.menu("zen-audio", SELECT, "adj:btpower:0", "bt")
         self.assertFalse(self.load()["bluez"]["powered"])
+
+    def test_player(self):
+        self.menu("zen-audio", SELECT, "media:")
+        self.assertEqual(self.load()["player"]["status"], "Paused")
+        _o, rows = self.menu("zen-audio", RIGHT, "media:")
+        self.assertIn("Song 2", rows[0][0])
+        self.state = self.load()
+        self.state["player"] = None
+        self.save()
+        _o, rows = self.menu("zen-audio")
+        self.assertNotEqual(rows[0][1]["info"], "media:")
 
     def test_without_bluetooth(self):
         self.state["bluez"] = None
@@ -429,6 +444,28 @@ class TestPanel(Zen):
     def test_shell_modules(self):
         for name in ("temp", "net", "tmux"):
             self.run_cmd(self.home / ".local/lib/zen/bar" / name)
+
+
+class TestTools(Zen):
+
+    def test_apply_check(self):
+        zen = self.home / ".local/bin/zen"
+        res = self.run_cmd(zen, "apply", "--check", "--user", check=False)
+        self.assertEqual(res.returncode, 1)
+        self.assertFalse((self.home / ".config/mako/config").exists())
+        self.run_cmd(zen, "apply", "--user")
+        self.assertEqual(self.run_cmd(zen, "apply", "--check", "--user", check=False).returncode, 0)
+
+    def test_gtklock_check(self):
+        res = self.run_cmd(self.home / ".local/bin/zen", "gtklock", "--check", check=False)
+        self.assertEqual(res.returncode, 1)
+
+    def test_doctor(self):
+        res = self.run_cmd(self.home / ".local/bin/zen", "doctor", check=False)
+        for title in ("Services", "Lock screen", "Colours", "Panel modules", "Repository"):
+            self.assertIn(title, res.stdout)
+        self.assertIn("zen gtklock", res.stdout)
+        self.assertEqual(res.returncode, 1)
 
 
 class TestDeploy(Zen):

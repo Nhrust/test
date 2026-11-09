@@ -176,12 +176,19 @@ enable_units() {
 			check="systemctl cat ${unit%%@*}@.service" act="sudo systemctl enable $unit"
 			[ "${unit#*@}" = "$unit" ] && check="systemctl cat $unit"
 		fi
-		if $check >/dev/null 2>&1; then
-			# shellcheck disable=SC2086
-			run $act
-		else
+		if ! $check >/dev/null 2>&1; then
 			say "- $unit: not installed, skipped"
+			continue
 		fi
+		# shellcheck disable=SC2086
+		state=$(${act%% enable*} is-enabled "$unit" 2>/dev/null) || true
+		case $state in
+			static|indirect|generated|alias)
+				say "- $unit: $state, started by the units that need it" ;;
+			*)
+				# shellcheck disable=SC2086
+				run $act ;;
+		esac
 	done
 }
 run systemctl --user daemon-reload

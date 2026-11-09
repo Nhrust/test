@@ -3,6 +3,7 @@
 
   zen apply           your files and, with sudo, the console and boot menu colours
   zen apply --user    only the files in your home folder
+  zen apply --check   list what would change, write nothing (exit 1 if anything would)
 
 Colour variables: rofi/zen-colors.rasi (@zen-NAME), waybar/zen-colors.css
 (@zen_NAME), and the Rofi search placeholder in the zen locale.
@@ -43,12 +44,18 @@ def templates(root, target):
         yield target / src.relative_to(root), src
 
 
+CHECK = False
+
+
 def write_user(path, text):
     try:
         if path.read_text() == text:
             return False
     except OSError:
         pass
+    if CHECK:
+        print(path)
+        return True
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".zen-new")
     tmp.write_text(text)
@@ -58,6 +65,20 @@ def write_user(path, text):
 
 
 def write_system(path, text, mode):
+    if CHECK:
+        try:
+            same = path.read_text() == text
+        except PermissionError:
+            res = subprocess.run(["sudo", "-n", "cat", str(path)], capture_output=True, text=True)
+            if res.returncode != 0:
+                print(f"{path}: needs sudo to check", file=sys.stderr)
+                return False
+            same = res.stdout == text
+        except OSError:
+            same = False
+        if not same:
+            print(path)
+        return not same
     with tempfile.NamedTemporaryFile("w", delete=False) as f:
         f.write(text)
         tmp = f.name
@@ -87,6 +108,8 @@ def reload(changed):
 
 
 def main(argv):
+    global CHECK
+    CHECK = "--check" in argv
     only_user = "--user" in argv
     colors = zen.colors()
     changed = []
@@ -98,13 +121,15 @@ def main(argv):
             changed.append(path)
     system = list(templates(SYSTEM_TEMPLATES, Path("/")))
     if system and not only_user:
-        if subprocess.run(["sudo", "-v"]).returncode != 0:
+        if not CHECK and subprocess.run(["sudo", "-v"]).returncode != 0:
             print(_("Console and boot menu colours skipped: sudo is needed"), file=sys.stderr)
         else:
             for path, src in system:
                 mode = "755" if os.access(src, os.X_OK) else "644"
                 if write_system(path, zen.render(src.read_text(), colors), mode):
                     changed.append(path)
+    if CHECK:
+        return 1 if changed else 0
     reload(changed)
     return 0
 
