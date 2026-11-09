@@ -1,0 +1,11 @@
+[Unit]
+Description=Zen: watch for new screenshots
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Path]
+PathChanged=%h/Pictures/Screenshots
+MakeDirectory=yes
+
+[Install]
+WantedBy=niri.service

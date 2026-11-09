@@ -172,7 +172,7 @@ binds {
     
     Ctrl+Shift+Escape { spawn "foot" "btop"; }
     Mod+P { spawn-sh "~/.local/bin/zen-displays"; }
-    Mod+A { spawn-sh "~/.local/bin/zen-audio"; }
+    Mod+M { spawn-sh "~/.local/bin/zen-audio"; }
     Mod+Shift+A { spawn-sh "~/.local/bin/zen-center"; }
 
     XF86AudioRaiseVolume  allow-when-locked=true { spawn-sh "~/.local/bin/zen-step volume up"; }
@@ -295,7 +295,7 @@ binds {
     Mod+F { spawn-sh "~/.local/lib/zen/autowidth toggle"; }
     Mod+Shift+F { fullscreen-window; }
 
-    Mod+M { maximize-window-to-edges; }
+    //Mod+M { maximize-window-to-edges; }
 
     Mod+Ctrl+F { expand-column-to-available-width; }
 

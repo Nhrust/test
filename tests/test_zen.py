@@ -248,6 +248,14 @@ class TestCenter(Zen):
         self.menu("zen-center", RIGHT, "dnd")
         self.assertNotIn("do-not-disturb", self.load()["mako"]["modes"])
 
+    def test_bell_counts_unseen(self):
+        """Without do-not-disturb the bell shows notifications that went to the history unseen."""
+        bell = self.run_cmd(self.home / ".local/bin/zen-center", "dnd").stdout.strip()
+        self.assertEqual(bell, "\U000F009A 2")
+        self.run_cmd(self.home / ".local/bin/zen-center", "read", "12")
+        self.run_cmd(self.home / ".local/bin/zen-center", "read", "11")
+        self.assertEqual(self.run_cmd(self.home / ".local/bin/zen-center", "dnd").stdout.strip(), "")
+
     def test_dnd_toggle_command(self):
         self.run_cmd(self.home / ".local/bin/zen-center", "dnd", "toggle")
         self.assertIn("do-not-disturb", self.load()["mako"]["modes"])
@@ -475,6 +483,24 @@ class TestPanel(Zen):
         self.run_cmd(self.home / ".local/bin/zen-lock")
         self.assertIn(f"gtklock -d -m powerbar-module -m {built}/zen-module.so", self.calls("gtklock"))
         self.assertEqual(self.calls("notify-send"), [])
+
+    def test_screenshot(self):
+        shots = self.home / "Pictures/Screenshots"
+        shots.mkdir(parents=True)
+        shot = shots / "Screenshot from 2026-11-09 12-50-01.png"
+        shot.write_bytes(b"png")
+        self.state["notify_action"] = "default"
+        self.save()
+        self.run_cmd(self.home / ".local/lib/zen/screenshot")
+        for _x in range(50):
+            if any("ShowItems" in c for c in self.calls("busctl")):
+                break
+            time.sleep(0.1)
+        self.assertTrue(any(shot.name in c for c in self.calls("notify-send")))
+        self.assertTrue(any(shot.as_uri() in c for c in self.calls("busctl")))
+        self.run_cmd(self.home / ".local/lib/zen/screenshot")
+        time.sleep(0.5)
+        self.assertEqual(len(self.calls("notify-send")), 1)
 
     def test_shell_modules(self):
         for name in ("temp", "net", "tmux"):

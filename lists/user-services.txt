@@ -6,3 +6,4 @@ zen-battery.service
 zen-cliphist.service
 zen-kanshi.service
 zen-menu-close.service
+zen-screenshot.path

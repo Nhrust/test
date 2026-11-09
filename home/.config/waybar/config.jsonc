@@ -104,7 +104,10 @@
         "dynamic-separator": " — ",
         "dynamic-len": 30,
         "title-len": 30,
-        "tooltip-format": "{player}: {dynamic}"
+        "tooltip-format": "{player}: {dynamic}",
+        "on-scroll-up": "playerctl --player=playerctld position 5+",
+        "on-scroll-down": "playerctl --player=playerctld position 5-",
+        "reverse-scrolling": true
     },
     "custom/date": {
         "on-click": "~/.local/bin/zen-center",

@@ -24,7 +24,7 @@ PAL = zen.palette()
 # units that run in every session; zen-idle and zen-caffeine take turns
 USER_UNITS = ["waybar.service", "zen-autowidth.service", "zen-battery.service",
               "zen-cliphist.service", "zen-kanshi.service", "zen-menu-close.service",
-              "plasma-polkit-agent.service"]
+              "plasma-polkit-agent.service", "zen-screenshot.path"]
 SYSTEM_UNITS = ["NetworkManager.service", "systemd-resolved.service", "nftables.service",
                 "sshd.service", "bluetooth.service", "power-profiles-daemon.service",
                 "ly@tty2.service", "zen-console.service"]

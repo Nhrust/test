@@ -1,0 +1,8 @@
+[Unit]
+Description=Zen: notification about a new screenshot
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/lib/zen/screenshot
+# the notifications wait for a click after the script has finished
+KillMode=process

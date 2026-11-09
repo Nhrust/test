@@ -1,7 +1,9 @@
 """zen-center — notifications, calendar and weather in one Rofi menu.
 
   zen-center          open the menu (a second call closes it)
-  zen-center dnd      Waybar module: do-not-disturb icon and unread count
+  zen-center dnd      Waybar module: unread count; a crossed bell while do-not-disturb is on,
+                      a bell when notifications went to the history unseen
+  zen-center read ID  mark a notification as seen (mako runs it on a click)
   zen-center dnd toggle   switch do-not-disturb on or off
   zen-center clear    remove all notifications
   zen-center fetch    download the weather into the cache (at most every 90 s)
@@ -43,6 +45,7 @@ COLOR = zen.palette()
 ACCENT, MUTED, LINE, CRITICAL = COLOR["accent"], COLOR["muted"], COLOR["line"], COLOR["critical"]
 METRIC = zen.metric()
 
+BELL = "\U000F009A"
 BELL_OFF = "\U000F009B"
 WIND, DROP, SUNRISE, SUNSET = "\U000F059D", "\U000F058E", "\U000F059C", "\U000F059B"
 SUN, MOON, PARTLY, PARTLY_NIGHT = "\U000F0599", "\U000F0594", "\U000F0595", "\U000F0F31"
@@ -456,9 +459,10 @@ def resolve(info):
     return info
 
 
-def unread():
+def unread(history_only=False):
+    """Notifications not yet opened here or clicked on screen."""
     done = load_ids(READ)
-    return sum(1 for _x, n, _y in items() if n["id"] not in done)
+    return sum(1 for _x, n, live in items() if n["id"] not in done and not (history_only and live))
 
 
 def mark_read(info):
@@ -642,12 +646,16 @@ def main():
     if sys.argv[1] == "dnd" and sys.argv[2:] == ["toggle"]:
         dnd_toggle()
         return 0
+    if sys.argv[1] == "read" and sys.argv[2:3] and sys.argv[2].isdigit():
+        mark_read(f"a:{sys.argv[2]}")
+        return 0
     if sys.argv[1] == "dnd":
         if dnd_on():
             count = unread()
             print(f"{BELL_OFF} {count}" if count else BELL_OFF)
         else:
-            print("")
+            count = unread(history_only=True)
+            print(f"{BELL} {count}" if count else "")
         return 0
     if sys.argv[1] != "list":
         sys.exit(__doc__)

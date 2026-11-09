@@ -544,3 +544,15 @@ msgstr[2] "{} пунктов требуют внимания"
 
 msgid "none"
 msgstr "нет"
+
+msgid "Screenshot"
+msgstr "Скриншот"
+
+msgid "Show in folder"
+msgstr "Показать в папке"
+
+msgid "Screenshot saved"
+msgstr "Скриншот сохранён"
+
+msgid "Copied to the clipboard"
+msgstr "Скопирован в буфер обмена"
