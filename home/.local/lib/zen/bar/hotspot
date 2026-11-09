@@ -1,0 +1,6 @@
+#!/bin/sh
+# hotspot — while the hotspot (zen-network) is on: its icon and how many devices
+# are on it; nothing while it is off, so the panel hides the module.
+nmcli -t -f DEVICE,STATE device 2>/dev/null | grep -q '^ap0:connected$' || { echo; exit 0; }
+n=$(ip -4 neigh show dev ap0 2>/dev/null | grep -vc FAILED)
+printf '\363\260\200\203 %s\n' "$n"

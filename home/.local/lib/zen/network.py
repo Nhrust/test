@@ -48,6 +48,7 @@ WIFI, WIRED = "802-11-wireless", "802-3-ethernet"
 HOTSPOT, HOTSPOT_IF, HOTSPOT_ICON = "zen-hotspot", "ap0", "\U000F0003"
 LEASES = Path(f"/var/lib/NetworkManager/dnsmasq-{HOTSPOT_IF}.leases")
 GUARD = "/usr/local/lib/zen/hotspot-guard"
+PANEL_SIGNAL = 14  # "signal" of custom/hotspot in waybar/config.jsonc
 HOTSPOT_CONF = zen.STATE_HOME / "zen/hotspot.json"
 HIDDEN_PASSWORD = "•" * 8
 
@@ -531,15 +532,22 @@ def hotspot_start():
     if ok:
         clear_caches()
         hs_apply(hs_settings())
+        panel()
     notify(ok, _("Hotspot on: {}").format(ssid_of(c["uuid"])) if ok else _("Could not start the hotspot"),
            "" if ok else last_line(res))
     if not ok:
         run("systemctl", "stop", f"{HOTSPOT}.service")
 
 
+def panel():
+    """The hotspot module of the panel shows the change now, not in 5 s."""
+    run("pkill", f"-RTMIN+{PANEL_SIGNAL}", "-x", "waybar")
+
+
 def hotspot_stop():
     run("nmcli", "connection", "down", "id", HOTSPOT)
     run("systemctl", "stop", f"{HOTSPOT}.service")
+    panel()
     notify(True, _("Hotspot off"))
 
 

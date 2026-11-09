@@ -102,6 +102,12 @@ window#waybar {
     padding-right: 14px;
 }
 
+/* the hotspot, left of the network icon: its own glyph and colour */
+#custom-hotspot {
+    padding: 0 4px 0 10px;
+    color: @zen_accent;
+}
+
 #custom-lang,
 #wireplumber,
 #battery {

@@ -29,7 +29,7 @@ SYSTEM_UNITS = ["NetworkManager.service", "systemd-resolved.service", "nftables.
                 "sshd.service", "bluetooth.service", "power-profiles-daemon.service",
                 "ly@tty2.service", "zen-console.service"]
 PANEL = [("bar/mic", []), ("bar/level", ["volume"]), ("bar/level", ["brightness"]),
-         ("bar/temp", []), ("bar/net", ["icon"]), ("bar/tmux", [])]
+         ("bar/temp", []), ("bar/net", ["icon"]), ("bar/hotspot", []), ("bar/tmux", [])]
 
 problems = 0
 

@@ -25,6 +25,7 @@
         "custom/gap-r1",
         "tray",
         "custom/gap-r2",
+        "custom/hotspot",
         "custom/net",
         "custom/lang",
         "group/light",
@@ -137,6 +138,13 @@
     "tray": {
         "icon-size": 16,
         "spacing": 8
+    },
+    "custom/hotspot": {
+        "exec": "~/.local/lib/zen/bar/hotspot",
+        "interval": 5,
+        "signal": 14,
+        "on-click": "~/.local/bin/zen-network open hotspot",
+        "tooltip": false
     },
     "custom/net": {
         "exec": "~/.local/lib/zen/bar/net icon",
