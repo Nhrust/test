@@ -255,6 +255,11 @@ class TestCenter(Zen):
         self.run_cmd(self.home / ".local/bin/zen-center", "dnd", "toggle")
         self.assertNotIn("do-not-disturb", self.load()["mako"]["modes"])
 
+    def test_clear_command(self):
+        self.run_cmd(self.home / ".local/bin/zen-center", "clear")
+        _o, rows = self.menu("zen-center")
+        self.assertFalse([r for r in rows if r[1]["info"][:2] in ("a:", "h:")])
+
     def test_tab_moves_to_the_calendar(self):
         options, _rows = self.menu("zen-center", TAB, "dnd", "0:l")
         self.assertTrue(options["data"].startswith("0:c"))

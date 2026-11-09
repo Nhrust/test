@@ -3,7 +3,8 @@
   zen-center          open the menu (a second call closes it)
   zen-center dnd      Waybar module: do-not-disturb icon and unread count
   zen-center dnd toggle   switch do-not-disturb on or off
-  zen-center fetch    download the weather into the cache
+  zen-center clear    remove all notifications
+  zen-center fetch    download the weather into the cache (at most every 90 s)
 """
 import calendar
 import datetime as dt
@@ -635,6 +636,9 @@ def main():
         launch()
     if sys.argv[1] == "fetch":
         return fetch()
+    if sys.argv[1] == "clear":
+        clear()
+        return 0
     if sys.argv[1] == "dnd" and sys.argv[2:] == ["toggle"]:
         dnd_toggle()
         return 0

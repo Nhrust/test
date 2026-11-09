@@ -109,6 +109,7 @@
     "custom/date": {
         "on-click": "~/.local/bin/zen-center",
         "on-click-right": "~/.local/bin/zen-center dnd toggle",
+        "on-click-middle": "~/.local/bin/zen-center clear",
         "exec": "date '+%a %-d %b  %H:%M:%S' | sed -E 's/^(\\S+ \\S+ )(\\S+)/\\1\\L\\2/'",
         "interval": 1,
         "tooltip": false
@@ -116,6 +117,8 @@
     "custom/weather": {
         "exec": "~/.local/lib/zen/bar/weather",
         "on-click": "~/.local/bin/zen-center",
+        "on-click-right": "pkill -RTMIN+13 -x waybar; ~/.local/bin/zen-center fetch",
+        "signal": 13,
         "interval": 900,
         "tooltip": false
     },
@@ -125,6 +128,7 @@
         "interval": 10,
         "on-click": "~/.local/bin/zen-center",
         "on-click-right": "~/.local/bin/zen-center dnd toggle",
+        "on-click-middle": "~/.local/bin/zen-center clear",
         "tooltip": false
     },
     "tray": {
