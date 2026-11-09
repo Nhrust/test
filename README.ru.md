@@ -22,7 +22,7 @@
 
 | Путь | Что |
 |---|---|
-| `~/.local/bin/` | команды, которые запускаешь сам или по бинду: `zen-center` (уведомления, календарь, погода), `zen-displays`, `zen-audio` (плеер, выходы, входы, уровни, приложения, Bluetooth), `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step` и служебная `zen` (`zen apply`, `zen diff`, `zen doctor`, `zen gtklock`) |
+| `~/.local/bin/` | команды, которые запускаешь сам или по бинду: `zen-center` (уведомления, календарь, погода), `zen-displays`, `zen-network` (Wi-Fi, Ethernet, Tailscale), `zen-audio` (плеер, выходы, входы, уровни, приложения, Bluetooth), `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step` и служебная `zen` (`zen apply`, `zen diff`, `zen doctor`, `zen gtklock`) |
 | `~/.local/lib/zen/` | внутренности: `bar/` (модули Waybar и tmux), фоновые помощники, общие `zen.py` и `zen.sh` |
 | `~/.local/share/zen/` | данные: исходник модуля gtklock и `templates/` — файлы с цветами палитры (mako, GTK, gtklock, Qt, KDE, Kvantum, foot, рамки окон Niri) |
 | `~/.config/zen/zen.conf` | твои настройки |
@@ -38,11 +38,12 @@
 | погода | уведомления, календарь, погода | обновить сейчас | — |
 | яркость, кофеин | мониторы | кофеин вкл/выкл | яркость |
 | громкость | звук | выключить звук | громкость |
+| сеть | сеть | Wi-Fi вкл/выкл | — |
 | выключенный микрофон | включить | — | — |
 | профиль, батарея | питание | следующий профиль питания | — |
 
 Mod+Space приложения · Mod+Shift+A уведомления · Mod+V буфер · Mod+P мониторы ·
-Mod+M звук · Mod+L блокировка · Ctrl+Shift+Esc btop. Внутри меню Alt+1… или
+Mod+N сеть · Mod+M звук · Mod+L блокировка · Ctrl+Shift+Esc btop. Внутри меню Alt+1… или
 значки сверху открывают другие меню.
 
 ## Развёртывание

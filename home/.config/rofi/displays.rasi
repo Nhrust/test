@@ -5,20 +5,23 @@ window {
 }
 
 mainbox {
-    children: [ switcher, inputbar, message, listview ];
+    children: [ switcher, message, listview ];
 }
 
-inputbar {
-    children: [ prompt ];
+listview {
+    expand: false;
 }
 
+/* the header takes the room left above the ten rows, so every menu keeps one size */
 message {
+    expand: true;
     padding: 4px 0px 8px 0px;
     border: 0px 0px 1px 0px;
     border-color: @zen-line;
 }
 
 textbox {
+    vertical-align: 0.5;
     font: "JetBrainsMono Nerd Font 10";
     text-color: @zen-muted;
     horizontal-align: 0.5;

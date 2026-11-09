@@ -133,10 +133,17 @@ def switch(retv, current):
     items = menus()
     if not 0 <= i < len(items) or items[i][0] == current:
         return False
-    launcher = Path.home() / ".local/bin" / items[i][0]
-    subprocess.Popen([str(launcher)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL, start_new_session=True)
+    detach(Path.home() / ".local/bin" / items[i][0])
     return True
+
+
+def detach(*cmd):
+    """Start a program that outlives the menu. Rofi marks the programs it runs
+    with ROFI_OUTSIDE and a new Rofi refuses to start while that one is open, so
+    the mark is left out: the program may open the next menu or a prompt."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("ROFI_")}
+    subprocess.Popen([str(c) for c in cmd], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True, env=env)
 
 
 _TOKEN = re.compile(r"\{\{\s*([a-z0-9]+)(?:\|([a-z]+)(?::([0-9a-f]{2}))?)?\s*\}\}")

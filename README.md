@@ -22,7 +22,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Path | What |
 |---|---|
-| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-audio` (player, outputs, inputs, levels, applications, Bluetooth), `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen apply`, `zen diff`, `zen doctor`, `zen gtklock`) |
+| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-network` (Wi-Fi, Ethernet, Tailscale), `zen-audio` (player, outputs, inputs, levels, applications, Bluetooth), `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen apply`, `zen diff`, `zen doctor`, `zen gtklock`) |
 | `~/.local/lib/zen/` | internals: `bar/` (Waybar and tmux modules), background helpers, the shared `zen.py` and `zen.sh` |
 | `~/.local/share/zen/` | data: the gtklock module source and `templates/` — files that carry the palette (mako, GTK, gtklock, Qt, KDE, Kvantum, foot, Niri borders) |
 | `~/.config/zen/zen.conf` | your settings |
@@ -38,11 +38,12 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 | weather | notifications, calendar, weather | refresh now | — |
 | brightness, caffeine | displays | caffeine on/off | brightness |
 | volume | sound | mute | volume |
+| network | network | Wi-Fi on/off | — |
 | muted microphone | unmute | — | — |
 | profile, battery | power | next power profile | — |
 
 Mod+Space apps · Mod+Shift+A notifications · Mod+V clipboard · Mod+P displays ·
-Mod+M sound · Mod+L lock · Ctrl+Shift+Esc btop. Inside a menu, Alt+1… or the
+Mod+N network · Mod+M sound · Mod+L lock · Ctrl+Shift+Esc btop. Inside a menu, Alt+1… or the
 icons on top open the other menus.
 
 ## Deploy

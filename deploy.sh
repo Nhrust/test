@@ -205,6 +205,10 @@ enable_units system "$ROOT/lists/system-services.txt" "$H/system-services.txt"
 if grep -qx 'ly@tty2.service' "$ROOT/lists/system-services.txt"; then
 	run sudo systemctl disable getty@tty2.service
 fi
+# the network menu switches Tailscale and its exit node as you, without sudo
+if command -v tailscale >/dev/null && systemctl is-active --quiet tailscaled.service; then
+	run sudo tailscale set --operator="$USER" || say "! tailscale: operator not set; run: sudo tailscale set --operator=$USER"
+fi
 
 # 5. boot image and lock screen module
 [ ! -s "$REBUILD" ] || run sudo mkinitcpio -P

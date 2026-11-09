@@ -257,6 +257,115 @@ def notify_send(st):
     return 0
 
 
+def nmcli(st):
+    nm = st.get("nm")
+    if nm is None:
+        return 0
+    a = [x for x in ARGS if x not in ("--terse", "-t", "--ask")]
+    if a[:1] == ["--fields"]:
+        a = a[2:]
+
+    def esc(v):
+        return str(v).replace("\\", "\\\\").replace(":", "\\:")
+
+    if a == ["device"]:
+        for d in nm["devices"]:
+            print(":".join(esc(x) for x in d))
+    elif a[:2] == ["radio", "wifi"]:
+        if a[2:]:
+            nm["wifi"] = a[2] == "on"
+            for d in nm["devices"]:
+                if d[1] == "wifi":
+                    d[2:] = ["connected", nm["active"]] if nm["wifi"] and nm["active"] else \
+                        ["disconnected" if nm["wifi"] else "unavailable", ""]
+        else:
+            print("enabled" if nm["wifi"] else "disabled")
+    elif a[:3] == ["device", "wifi", "list"]:
+        if "yes" in a:
+            nm["scans"] = nm.get("scans", 0) + 1
+        for ap in nm["aps"] if nm["wifi"] else []:
+            print(":".join(esc(x) for x in ("*" if ap["ssid"] == nm["active"] else " ", ap["ssid"],
+                                             ap["signal"], ap["security"], ap["freq"], ap["chan"])))
+    elif a[:2] == ["device", "wifi"] and a[2:3] == ["rescan"]:
+        pass
+    elif a[:2] == ["connection", "show"]:
+        for name in nm["saved"]:
+            print(f"{esc(name)}:802-11-wireless")
+        print("Wired connection 1:802-3-ethernet")
+    elif a[:2] == ["device", "show"]:
+        for key, values in nm["ip"].get(a[2], {}).items():
+            for i, v in enumerate(values, 1):
+                print(f"{key}[{i}]:{esc(v)}")
+    elif a[:3] == ["device", "wifi", "connect"]:
+        ssid = a[3]
+        want = nm["passwords"].get(ssid)
+        if want is not None and sys.stdin.read().strip() != want:
+            print("Error: Connection activation failed: Secrets were required, but not provided.",
+                  file=sys.stderr)
+            return 4
+        nm["saved"] = sorted(set(nm["saved"]) | {ssid})
+        nm["active"] = ssid
+        for d in nm["devices"]:
+            if d[1] == "wifi":
+                d[2:] = ["connected", ssid]
+    elif a[:3] == ["connection", "up", "id"]:
+        nm["active"] = a[3]
+        for d in nm["devices"]:
+            if d[1] == "wifi":
+                d[2:] = ["connected", a[3]]
+    elif a[:3] == ["connection", "delete", "id"]:
+        nm["saved"] = [x for x in nm["saved"] if x != a[3]]
+        if nm["active"] == a[3]:
+            nm["active"] = ""
+            for d in nm["devices"]:
+                if d[1] == "wifi":
+                    d[2:] = ["disconnected", ""]
+    elif a[:2] == ["device", "disconnect"]:
+        for d in nm["devices"]:
+            if d[0] == a[2]:
+                d[2:] = ["disconnected", ""]
+                if d[1] == "wifi":
+                    nm["active"] = ""
+    elif a[:2] == ["device", "connect"]:
+        for d in nm["devices"]:
+            if d[0] == a[2]:
+                d[2:] = ["connected", "Wired connection 1"]
+    return 0
+
+
+def tailscale(st):
+    ts = st.get("tailscale")
+    if ts is None:
+        print("tailscale: command not found", file=sys.stderr)
+        return 127
+    if ARGS[:2] == ["status", "--json"]:
+        print(json.dumps(ts))
+    elif ARGS == ["up"]:
+        ts["BackendState"] = "Running"
+    elif ARGS == ["down"]:
+        ts["BackendState"] = "Stopped"
+    elif ARGS[:1] == ["set"] and ARGS[1].startswith("--exit-node="):
+        ip = ARGS[1].split("=", 1)[1]
+        for p in ts["Peer"].values():
+            p["ExitNode"] = bool(ip) and ip in p["TailscaleIPs"]
+    return 0
+
+
+def rofi(st):
+    """rofi -dmenu answers with what the test put in "rofi_input"; null is Escape."""
+    if os.environ.get("ROFI_OUTSIDE"):
+        # as the real one does while the menu that started the caller is open
+        print("Do not launch rofi from inside rofi.")
+        return 1
+    if "-dmenu" in ARGS:
+        sys.stdin.read()
+        answer = st.get("rofi_input")
+        if answer is None:
+            return 1
+        print(answer)
+    return 0
+
+
 def pgrep(st):
     return 1
 
@@ -269,6 +378,7 @@ HANDLERS = {
     "makoctl": makoctl, "wpctl": wpctl, "pw-dump": pw_dump, "busctl": busctl, "cliphist": cliphist,
     "niri": niri, "systemctl": systemctl, "brightnessctl": brightnessctl, "sudo": sudo,
     "playerctl": playerctl, "pgrep": pgrep, "notify-send": notify_send, "gtklock": gtklock, "pacman": pacman,
+    "nmcli": nmcli, "tailscale": tailscale, "rofi": rofi,
 }
 
 

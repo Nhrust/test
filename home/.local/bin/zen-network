@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+"""zen-network — Wi-Fi, Ethernet and Tailscale in one Rofi menu."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
+from network import main  # noqa: E402
+
+sys.exit(main())

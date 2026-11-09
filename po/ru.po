@@ -559,3 +559,97 @@ msgstr "Скопирован в буфер обмена"
 
 msgid "Delete"
 msgstr "Удалить"
+
+# network menu
+msgid "network"
+msgstr "сеть"
+
+msgid "Network"
+msgstr "Сеть"
+
+msgid "Networks"
+msgstr "Сети"
+
+msgid "Wi-Fi is off"
+msgstr "Wi-Fi выключен"
+
+msgid "Wi-Fi network {}"
+msgstr "Сеть Wi-Fi {}"
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Search again"
+msgstr "Искать заново"
+
+msgid "No networks found"
+msgstr "Сети не найдены"
+
+msgid "No network devices"
+msgstr "Нет сетевых устройств"
+
+msgid "saved"
+msgstr "сохранена"
+
+msgid "no cable"
+msgstr "нет кабеля"
+
+msgid "Connect"
+msgstr "Подключить"
+
+msgid "Disconnect"
+msgstr "Отключить"
+
+msgid "Forget this network"
+msgstr "Забыть эту сеть"
+
+msgid "Gateway"
+msgstr "Шлюз"
+
+msgid "Signal"
+msgstr "Сигнал"
+
+msgid "channel"
+msgstr "канал"
+
+msgid "Security"
+msgstr "Защита"
+
+msgid "Copied: {}"
+msgstr "Скопировано: {}"
+
+msgid "Devices"
+msgstr "Устройства"
+
+msgid "No other devices"
+msgstr "Других устройств нет"
+
+msgid "online"
+msgstr "в сети"
+
+msgid "offline"
+msgstr "не в сети"
+
+msgid "Last seen"
+msgstr "Был в сети"
+
+msgid "Exit node"
+msgstr "Выходной узел"
+
+msgid "None"
+msgstr "Нет"
+
+msgid "Use as exit node"
+msgstr "Выходить в интернет через него"
+
+msgid "Stop using as exit node"
+msgstr "Не выходить через него"
+
+msgid "log in with: tailscale up"
+msgstr "войдите: tailscale up"
+
+msgid "{} device online"
+msgid_plural "{} devices online"
+msgstr[0] "{} устройство в сети"
+msgstr[1] "{} устройства в сети"
+msgstr[2] "{} устройств в сети"
