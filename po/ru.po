@@ -557,8 +557,5 @@ msgstr "Скриншот сохранён"
 msgid "Copied to the clipboard"
 msgstr "Скопирован в буфер обмена"
 
-msgid "Go to the app"
-msgstr "Перейти в приложение"
-
 msgid "Delete"
 msgstr "Удалить"

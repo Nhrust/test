@@ -236,9 +236,15 @@ class TestCenter(Zen):
         options, rows = self.menu("zen-center", SELECT, "h:11")
         self.assertIn("d=h_11", options["data"])
         infos = [r[1]["info"] for r in rows]
-        self.assertEqual((infos[0], infos[-2], infos[-1]), ("back", "open", "del"))
-        self.assertTrue(all(r[1].get("nonselectable") for r in rows[1:-2]))
-        self.assertEqual(rows[int(options["new-selection"])][1]["info"], "open")
+        self.assertEqual((infos[0], infos[1], infos[-1]), ("back", "t0", "del"))
+        self.assertEqual(rows[int(options["new-selection"])][1]["info"], "t0")
+
+    def test_click_on_text_goes_to_the_app(self):
+        options, _rows = self.menu("zen-center", SELECT, "h:11")
+        self.menu("zen-center", SELECT, "t1", options["data"])
+        _o, rows = self.menu("zen-center")
+        self.assertNotIn("h:11", [r[1]["info"] for r in rows])
+        self.assertEqual(self.calls("wl-copy"), [])
 
     def test_detail_back_and_delete(self):
         options, _rows = self.menu("zen-center", SELECT, "h:11")

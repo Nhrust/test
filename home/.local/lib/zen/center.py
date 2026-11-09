@@ -511,7 +511,8 @@ def show(offset, focus=None, confirm=False, cal=False):
 
 
 def detail(offset, info, focus=None):
-    """The whole notification, then Open and Delete; Back, Escape or ← return to the list."""
+    """The whole notification and Delete; a click or Enter on the text goes to the app,
+    Back, Escape or ← return to the list."""
     n = find(info)
     if n is None:
         show(offset, "dnd")
@@ -526,14 +527,13 @@ def detail(offset, info, focus=None):
             for line in textwrap.wrap(para, WRAP) or [""]:
                 line = html.escape(line)
                 text.append(f"<b>{line}</b>" if bold else line)
-    rows = [("‹ " + html.escape(_("Back")), "back", False)]
-    rows += [(t, f"t{i}", True) for i, t in enumerate(text)]
-    rows += [(html.escape(_("Go to the app")), "open", False), (html.escape(_("Delete")), "del", False)]
+    rows = [("‹ " + html.escape(_("Back")), "back")]
+    rows += [(t, f"t{i}") for i, t in enumerate(text)]
+    rows += [(html.escape(_("Delete")), "del")]
     infos = [r[1] for r in rows]
-    option("new-selection", str(infos.index(focus) if focus in infos else len(rows) - 2))
-    for label, key, passive in rows:
-        extra = "\x1fnonselectable\x1ftrue" if passive else ""
-        sys.stdout.write(f"{label}\0info\x1f{key}{extra}\n")
+    option("new-selection", str(infos.index(focus) if focus in infos else 1))
+    for label, key in rows:
+        sys.stdout.write(f"{label}\0info\x1f{key}\n")
 
 
 def fits(n):
@@ -630,7 +630,7 @@ def launch():
 def handle_detail(retv, info, offset, opened):
     if retv in (LEFT, ESC) or (retv == SELECT and info == "back"):
         show(offset, opened)
-    elif retv == SELECT and info == "open" and go(opened):
+    elif retv == SELECT and info[:1] == "t" and go(opened):
         pass
     elif retv in (RIGHT, DELETE) or (retv == SELECT and info == "del"):
         keys = [k for k, _x, _y in items()]
