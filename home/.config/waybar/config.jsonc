@@ -108,8 +108,9 @@
         "on-click": "~/.local/bin/zen-audio",
         "on-click-right": "playerctl --player=playerctld play-pause",
         "on-click-middle": "~/.local/bin/zen-audio player-mute",
-        "on-scroll-up": "playerctl --player=playerctld position 5+",
-        "on-scroll-down": "playerctl --player=playerctld position 5-",
+        "on-scroll-up": "playerctl --player=playerctld next",
+        "on-scroll-down": "playerctl --player=playerctld previous",
+        "smooth-scrolling-threshold": 4,
         "reverse-scrolling": true
     },
     "custom/date": {
