@@ -109,6 +109,13 @@ def pw_dump(st):
 def busctl(st):
     a = [x for x in ARGS if not x.startswith("--")]
     joined = " ".join(ARGS)
+    if "GetConnectionUnixProcessID" in joined:
+        pid = (st.get("player") or {}).get("pid")
+        if pid is None:
+            print("Call failed: name has no owner", file=sys.stderr)
+            return 1
+        print(f"u {pid}")
+        return 0
     if "org.bluez" in joined:
         bz = st.get("bluez")
         if bz is None:
@@ -235,7 +242,8 @@ def playerctl(st):
         fmt = ARGS[ARGS.index("--format") + 1]
         out = fmt
         for key, value in (("status", p["status"]), ("artist", p["artist"]),
-                           ("title", f'Song {p["track"]}'), ("playerName", p["name"])):
+                           ("title", f'Song {p["track"]}'), ("playerName", p["name"]),
+                           ("playerInstance", p.get("instance", p["name"]))):
             out = out.replace("{{%s}}" % key, value)
         print(out)
     elif cmd == "play-pause":

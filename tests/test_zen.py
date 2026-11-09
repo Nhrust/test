@@ -357,6 +357,24 @@ class TestAudio(Zen):
         options, _rows = self.menu("zen-audio", ESC, "", "vol:51")
         self.assertEqual(options["data"], "main")
 
+    def test_player_mute(self):
+        """Middle click on the player: only its own sound goes quiet, by name..."""
+        self.run_cmd(self.home / ".local/bin/zen-audio", "player-mute")
+        self.assertFalse(self.volume(71)[1], "mpv was muted: the click brings it back")
+        self.run_cmd(self.home / ".local/bin/zen-audio", "player-mute")
+        self.assertTrue(self.volume(71)[1])
+        self.assertFalse(self.volume(70)[1], "Firefox plays on")
+        self.assertFalse(self.volume(51)[1], "the output stays on")
+
+    def test_player_mute_by_process(self):
+        """...or by process: a browser plays from a process it started."""
+        self.state["player"].update({"name": "chromium", "instance": "chromium.instance77", "pid": os.getpid()})
+        self.state["wp"]["nodes"]["70"]["application.process.id"] = os.getpid()
+        self.save()
+        self.run_cmd(self.home / ".local/bin/zen-audio", "player-mute")
+        self.assertTrue(self.volume(70)[1])
+        self.assertTrue(self.volume(71)[1], "mpv (muted before) is not touched")
+
     def test_mute_signals_the_panel(self):
         self.menu("zen-audio", SELECT, "adj:mute:60")
         self.assertFalse(self.volume(60)[1])

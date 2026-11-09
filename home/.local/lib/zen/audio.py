@@ -3,6 +3,8 @@
   zen-audio              open the menu (a second call closes it)
   zen-audio mic-mute     mute or unmute the default input (XF86AudioMicMute)
   zen-audio mute         mute or unmute the default output (XF86AudioMute)
+  zen-audio player-mute  mute or unmute the sound of the playing player only
+                         (middle click on the player in the panel)
 
 Devices keep the names PipeWire gives them. Levels go in steps of 5% up to 100%.
 While a player plays, the first row shows it: Enter pauses, ← and → change the track.
@@ -144,6 +146,57 @@ def player_do(action):
         time.sleep(0.05)
         if player() != before:
             break
+
+
+def ancestors(pid):
+    """The process and the ones that started it, up to init."""
+    out = []
+    while pid > 1 and len(out) < 32:
+        out.append(pid)
+        try:
+            stat = Path(f"/proc/{pid}/stat").read_text()
+            pid = int(stat.rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError, IndexError):
+            break
+    return out
+
+
+def player_streams(g):
+    """The output streams of the active player. A stream belongs to it when its
+    process is the player's process or was started by it (browsers play sound
+    from a helper process), or, failing that, when the names match."""
+    res = run("playerctl", "metadata", "--format", "{{playerInstance}}")
+    instance = res.stdout.strip()
+    if res.returncode != 0 or not instance:
+        return []
+    owner = run("busctl", "--user", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
+                "org.freedesktop.DBus", "GetConnectionUnixProcessID", "s",
+                f"org.mpris.MediaPlayer2.{instance}").stdout.split()
+    pid = int(owner[1]) if len(owner) == 2 and owner[1].isdigit() else None
+    name = instance.split(".")[0].lower()
+    by_pid, by_name = [], []
+    for nid in g.apps():
+        p = g.nodes[nid]
+        try:
+            spid = int(p.get("application.process.id") or 0)
+        except (TypeError, ValueError):
+            spid = 0
+        if pid and spid and pid in ancestors(spid):
+            by_pid.append(nid)
+        names = {str(p.get(k) or "").lower() for k in ("application.process.binary", "application.name")}
+        if any(n and (n == name or n.startswith(name)) for n in names):
+            by_name.append(nid)
+    return by_pid or by_name
+
+
+def player_mute():
+    """Mute the player's streams, or unmute them when all are muted."""
+    nids = player_streams(Graph())
+    if not nids:
+        return
+    mute = any(not level(nid)[1] for nid in nids)
+    for nid in nids:
+        run("wpctl", "set-mute", str(nid), "1" if mute else "0")
 
 
 # ---------------------------------------------------------------- Bluetooth
@@ -513,6 +566,9 @@ def main():
         return 0
     if cmd == "mute":
         run("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle")
+        return 0
+    if cmd == "player-mute":
+        player_mute()
         return 0
     if cmd == "bt" and len(sys.argv) == 4 and sys.argv[2] in ("connect", "disconnect"):
         return bt_worker(sys.argv[2], sys.argv[3])

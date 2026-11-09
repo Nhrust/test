@@ -104,11 +104,10 @@
             "vlc": "󰕼",
             "telegram": ""
         },
-        "dynamic-order": ["artist", "title"],
-        "dynamic-importance-order": ["title", "artist"],
-        "dynamic-separator": " — ",
-        "dynamic-len": 80,
-        "tooltip-format": "{player}: {dynamic}",
+        "tooltip": false,
+        "on-click": "~/.local/bin/zen-audio",
+        "on-click-right": "playerctl --player=playerctld play-pause",
+        "on-click-middle": "~/.local/bin/zen-audio player-mute",
         "on-scroll-up": "playerctl --player=playerctld position 5+",
         "on-scroll-down": "playerctl --player=playerctld position 5-",
         "reverse-scrolling": true
