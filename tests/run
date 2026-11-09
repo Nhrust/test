@@ -1,0 +1,4 @@
+#!/bin/sh
+# Run the test suite: tests/run [-k NAME] [-v]
+cd "$(dirname "$0")/.." || exit 1
+exec python3 -m unittest discover -s tests -t . "$@"

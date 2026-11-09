@@ -27,6 +27,8 @@ curl -fsSL -o "$TMP/gtklock-module.h" \
   "https://raw.githubusercontent.com/jovanlanik/gtklock-powerbar-module/v$pb/gtklock-module.h"
 
 mkdir -p "$OUT"
+# pkg-config prints several flags that must stay separate words
+# shellcheck disable=SC2046
 gcc -shared -fPIC -DZEN_MAJOR="$major" -DZEN_MINOR="$minor" -I"$TMP" \
   -o "$OUT/zen-module.so.new" "$SRC" $(pkg-config --cflags --libs gtk+-3.0)
 mv "$OUT/zen-module.so.new" "$OUT/zen-module.so"

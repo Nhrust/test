@@ -50,6 +50,12 @@ cp -r hosts/zen hosts/$(cat /etc/hostname)   # и поправить под эт
 в репозитории и запускай `./deploy.sh --no-packages`; `zen diff` покажет, что
 с тех пор менялось прямо в системе, чтобы перенести это обратно.
 
+## Тесты
+
+`tests/run` проверяет меню, модули панели, `zen apply` и пробный прогон
+`deploy.sh` на подставных программах (`tests/mock.py`) во временной домашней
+папке; система не затрагивается. Нужны Python 3 и `msgfmt`.
+
 ## Настройки
 
 `~/.config/zen/zen.conf` (пример — `home/.config/zen/zen.conf.example`):

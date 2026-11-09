@@ -4,7 +4,6 @@
   level volume
   level brightness
 """
-import os
 import re
 import subprocess
 import sys

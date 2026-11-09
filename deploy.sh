@@ -120,6 +120,8 @@ tree "$H/usr/local" /usr/local sudo
 
 # files earlier versions installed and this one does not
 for f in $(lines "$ROOT/lists/removed.txt"); do
+	# entries name home files as ~/path
+	# shellcheck disable=SC2088
 	case $f in "~/"*) f="$HOME/${f#\~/}" ;; esac
 	sudo=
 	case $f in "$HOME"/*) ;; *) sudo=sudo ;; esac

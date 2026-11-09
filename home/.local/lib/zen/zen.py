@@ -1,5 +1,6 @@
 """Common code for the zen scripts: settings, palette, translations, locale."""
 import configparser
+import functools
 import gettext
 import locale
 import os
@@ -49,7 +50,9 @@ DEFAULTS = {
 }
 
 
+@functools.lru_cache(maxsize=None)
 def settings():
+    """~/.config/zen/zen.conf over the defaults, read once per process."""
     cfg = configparser.ConfigParser(inline_comment_prefixes=(";",))
     cfg.read_dict(DEFAULTS)
     cfg.read(CONFIG, encoding="utf-8")
@@ -125,12 +128,18 @@ def run(*cmd, **kwargs):
         return subprocess.CompletedProcess(cmd, 127, "", "")
 
 
+@functools.lru_cache(maxsize=None)
+def _locale_category(category):
+    out = {}
+    for line in run("locale", "-k", category).stdout.splitlines():
+        key, sep, value = line.partition("=")
+        if sep:
+            out[key] = value.strip('"')
+    return out
+
+
 def _locale_keyword(category, keyword):
-    out = run("locale", "-k", category).stdout
-    for line in out.splitlines():
-        if line.startswith(keyword + "="):
-            return line.split("=", 1)[1].strip('"')
-    return None
+    return _locale_category(category).get(keyword)
 
 
 def first_weekday():

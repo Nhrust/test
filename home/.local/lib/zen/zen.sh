@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 # Sourced by the zen shell scripts: locale from zen.conf and gettext domain.
 ZEN_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/zen/zen.conf"
 zen_locale=$(sed -n '/^\[general\]/,/^\[/s/^locale *= *//p' "$ZEN_CONF" 2>/dev/null | head -n 1)

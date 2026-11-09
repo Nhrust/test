@@ -2,7 +2,6 @@
 """weather — Waybar module: weather icon and temperature from wttr.in."""
 import datetime
 import json
-import os
 import re
 import sys
 import urllib.parse

@@ -11,4 +11,6 @@ done
 if [ "$n" -eq 0 ] && [ -r /sys/class/thermal/thermal_zone0/temp ]; then
 	sum=$(cat /sys/class/thermal/thermal_zone0/temp); n=1
 fi
-[ "$n" -gt 0 ] && printf "%3d°C\n" "$((sum / n / 1000))"
+if [ "$n" -gt 0 ]; then
+	printf "%3d°C\n" "$((sum / n / 1000))"
+fi

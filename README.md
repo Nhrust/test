@@ -51,6 +51,12 @@ something, edit it in the repository and run `./deploy.sh --no-packages`;
 `zen diff` lists what was changed on the system since, so it can be carried
 back.
 
+## Tests
+
+`tests/run` checks the menus, the panel modules, `zen apply` and a dry run of
+`deploy.sh` against stand-in programs (`tests/mock.py`), in a temporary home
+folder; nothing on the system is touched. Needs Python 3 and `msgfmt`.
+
 ## Settings
 
 `~/.config/zen/zen.conf` (example in `home/.config/zen/zen.conf.example`):
