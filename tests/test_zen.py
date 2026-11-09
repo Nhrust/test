@@ -446,6 +446,28 @@ class TestPanel(Zen):
             self.run_cmd(self.home / ".local/lib/zen/bar" / name)
 
 
+class TestConfigs(Zen):
+
+    def test_waybar_paths(self):
+        """Every script the panel runs exists and is executable."""
+        import re
+        text = (self.home / ".config/waybar/config.jsonc").read_text()
+        config = json.loads(re.sub(r"^\s*//.*$", "", text, flags=re.M))
+        for name, module in config.items():
+            if not isinstance(module, dict):
+                continue
+            for key, value in module.items():
+                if isinstance(value, str) and value.startswith("~/"):
+                    path = self.home / value.split()[0][2:]
+                    self.assertTrue(os.access(path, os.X_OK), f"{name}.{key}: {value}")
+
+    def test_niri_binds(self):
+        import re
+        text = (self.home / ".config/niri/config.kdl").read_text()
+        for cmd in re.findall(r'spawn-sh "~/([^ "]+)', text):
+            self.assertTrue(os.access(self.home / cmd, os.X_OK), cmd)
+
+
 class TestTools(Zen):
 
     def test_apply_check(self):

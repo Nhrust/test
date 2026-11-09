@@ -16,6 +16,7 @@
         "custom/gap-l2"
     ],
     "modules-center": [
+        "mpris",
         "custom/date",
         "custom/dnd",
         "custom/weather"
@@ -86,6 +87,24 @@
         "on-click": "foot btop",
         "format": "󰓢 {}",
         "tooltip": false
+    },
+    "mpris": {
+        "format": "{player_icon}  {dynamic}",
+        "format-paused": "{player_icon}  {dynamic}",
+        "player-icons": {
+            "default": "󰝚",
+            "firefox": "󰈹",
+            "chromium": "󰊯",
+            "spotify": "󰓇",
+            "vlc": "󰕼",
+            "telegram": ""
+        },
+        "dynamic-order": ["artist", "title"],
+        "dynamic-importance-order": ["title", "artist"],
+        "dynamic-separator": " — ",
+        "dynamic-len": 30,
+        "title-len": 30,
+        "tooltip-format": "{player}: {dynamic}"
     },
     "custom/date": {
         "on-click": "~/.local/bin/zen-center",

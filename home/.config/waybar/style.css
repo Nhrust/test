@@ -74,6 +74,15 @@ window#waybar {
     color: transparent;
 }
 
+#mpris {
+    padding: 0 10px 0 8px;
+    color: @zen_fg;
+}
+
+#mpris.paused {
+    color: @zen_muted;
+}
+
 #custom-date,
 #custom-weather {
     padding: 0 8px;
