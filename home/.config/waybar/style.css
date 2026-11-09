@@ -134,6 +134,53 @@ window#waybar {
     color: @zen_critical;
 }
 
+/* The menu an application in the tray sends on a right click: its items, our look */
+menu {
+    background-color: @zen_bg;
+    border: 1px solid @zen_line;
+    padding: 4px 0;
+}
+
+menuitem {
+    padding: 4px 14px;
+    color: @zen_fg;
+}
+
+menuitem:hover {
+    background-color: @zen_accent;
+    color: @zen_bg;
+}
+
+menuitem:disabled,
+menuitem:disabled label {
+    color: @zen_line;
+}
+
+menu separator {
+    min-height: 1px;
+    margin: 4px 0;
+    background-color: @zen_inactive;
+}
+
+menuitem check,
+menuitem radio {
+    min-width: 12px;
+    min-height: 12px;
+    margin-right: 8px;
+    color: @zen_accent;
+}
+
+menuitem:hover check,
+menuitem:hover radio,
+menuitem:hover arrow {
+    color: @zen_bg;
+}
+
+menuitem arrow {
+    min-width: 12px;
+    color: @zen_muted;
+}
+
 #backlight {
     padding: 0 10px;
     color: @zen_fg;

@@ -169,6 +169,9 @@ if [ ! -d "$DATA/icons/$CURSOR" ]; then
 	rm -f "$t"
 fi
 run gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR"
+# GTK apps and the panel tray take icons from Papirus-Dark, as Qt does; its
+# "panel" set gives tray applications their own icons in one colour
+run gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark
 if command -v fish >/dev/null; then
 	# fish_add_path returns 1 when the path is already there
 	run fish -c 'fish_add_path -U ~/.local/bin' || true
