@@ -29,6 +29,21 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 | `~/.local/state/zen/` | what the menus remember: monitor modes, pinned clipboard entries |
 | `zen-*.service` | user services: `zen-idle`, `zen-caffeine`, `zen-autowidth`, `zen-battery`, `zen-cliphist`, `zen-kanshi`, `zen-menu-close` |
 
+## Panel and keys
+
+| Where | Left click | Right click | Wheel |
+|---|---|---|---|
+| player | pause | next track | — |
+| clock, bell | notifications, calendar, weather | do not disturb on/off | — |
+| brightness, caffeine | displays | caffeine on/off | brightness |
+| volume | sound | mute | volume |
+| muted microphone | unmute | — | — |
+| profile, battery | power | next power profile | — |
+
+Mod+Space apps · Mod+Shift+A notifications · Mod+V clipboard · Mod+P displays ·
+Mod+A sound · Mod+L lock · Ctrl+Shift+Esc btop. Inside a menu, Alt+1… or the
+icons on top open the other menus.
+
 ## Deploy
 
 On a fresh system installed by the guide (docs follow), as your user:

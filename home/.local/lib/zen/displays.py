@@ -3,6 +3,7 @@
   zen-displays            open the menu (a second call closes it)
   zen-displays restore    restore brightness and mirroring of the current place (kanshi exec)
   zen-displays caffeine   Waybar module: caffeine icon while it is on
+  zen-displays caffeine toggle   switch caffeine on or off
 """
 import hashlib
 import html
@@ -772,7 +773,10 @@ def main():
     if sys.argv[1] == "restore":
         return restore()
     if sys.argv[1] == "caffeine":
-        print(COFFEE if caffeine_on() else "")
+        if sys.argv[2:] == ["toggle"]:
+            caffeine_set(not caffeine_on())
+        else:
+            print(COFFEE if caffeine_on() else "")
         return 0
     if sys.argv[1] != "list":
         sys.exit(__doc__)

@@ -108,6 +108,7 @@
     },
     "custom/date": {
         "on-click": "~/.local/bin/zen-center",
+        "on-click-right": "~/.local/bin/zen-center dnd toggle",
         "exec": "date '+%a %-d %b  %H:%M:%S' | sed -E 's/^(\\S+ \\S+ )(\\S+)/\\1\\L\\2/'",
         "interval": 1,
         "tooltip": false
@@ -123,6 +124,7 @@
         "signal": 11,
         "interval": 10,
         "on-click": "~/.local/bin/zen-center",
+        "on-click-right": "~/.local/bin/zen-center dnd toggle",
         "tooltip": false
     },
     "tray": {
@@ -148,7 +150,7 @@
         "on-scroll-up": "~/.local/bin/zen-step volume up",
         "on-scroll-down": "~/.local/bin/zen-step volume down",
         "on-click": "~/.local/bin/zen-audio",
-        "on-click-middle": "~/.local/bin/zen-audio mute",
+        "on-click-right": "~/.local/bin/zen-audio mute",
         "tooltip": false,
         "format-icons": [
             "󰕿",
@@ -160,6 +162,7 @@
         "format": "{percent:>3}%",
         "on-update": "pkill -RTMIN+9 -x waybar",
         "on-click": "~/.local/bin/zen-displays",
+        "on-click-right": "~/.local/bin/zen-displays caffeine toggle",
         "on-scroll-up": "~/.local/bin/zen-step brightness up",
         "on-scroll-down": "~/.local/bin/zen-step brightness down",
         "reverse-scrolling": true,
@@ -194,11 +197,13 @@
         "signal": 10,
         "interval": 30,
         "on-click": "~/.local/bin/zen-displays",
+        "on-click-right": "~/.local/bin/zen-displays caffeine toggle",
         "tooltip": false
     },
     "image#brightness": {
         "exec": "~/.local/lib/zen/bar/level brightness",
         "on-click": "~/.local/bin/zen-displays",
+        "on-click-right": "~/.local/bin/zen-displays caffeine toggle",
         "size": 14,
         "signal": 9,
         "interval": 30,
@@ -213,7 +218,7 @@
         "signal": 8,
         "interval": 30,
         "on-click": "~/.local/bin/zen-audio",
-        "on-click-middle": "~/.local/bin/zen-audio mute",
+        "on-click-right": "~/.local/bin/zen-audio mute",
         "on-scroll-up": "~/.local/bin/zen-step volume up",
         "on-scroll-down": "~/.local/bin/zen-step volume down",
         "reverse-scrolling": true,

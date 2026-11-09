@@ -248,6 +248,13 @@ class TestCenter(Zen):
         self.menu("zen-center", RIGHT, "dnd")
         self.assertNotIn("do-not-disturb", self.load()["mako"]["modes"])
 
+    def test_dnd_toggle_command(self):
+        self.run_cmd(self.home / ".local/bin/zen-center", "dnd", "toggle")
+        self.assertIn("do-not-disturb", self.load()["mako"]["modes"])
+        self.assertIn("pkill -RTMIN+11 -x waybar", self.calls("pkill"))
+        self.run_cmd(self.home / ".local/bin/zen-center", "dnd", "toggle")
+        self.assertNotIn("do-not-disturb", self.load()["mako"]["modes"])
+
     def test_tab_moves_to_the_calendar(self):
         options, _rows = self.menu("zen-center", TAB, "dnd", "0:l")
         self.assertTrue(options["data"].startswith("0:c"))
@@ -412,6 +419,12 @@ class TestDisplays(Zen):
         self.assertIn("zen-caffeine.service", self.load()["systemd"]["active"])
         out = self.run_cmd(self.home / ".local/bin/zen-displays", "caffeine").stdout.strip()
         self.assertNotEqual(out, "")
+
+    def test_caffeine_toggle_command(self):
+        self.run_cmd(self.home / ".local/bin/zen-displays", "caffeine", "toggle")
+        self.assertIn("zen-caffeine.service", self.load()["systemd"]["active"])
+        self.run_cmd(self.home / ".local/bin/zen-displays", "caffeine", "toggle")
+        self.assertEqual(self.load()["systemd"]["active"], ["zen-idle.service"])
 
     def test_brightness(self):
         self.menu("zen-displays", RIGHT, "adj:bright:eDP-1", "out:eDP-1")
