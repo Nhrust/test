@@ -223,7 +223,8 @@ fi
 # running programs pick up their new configs
 ! grep -qx waybar "$RELOAD" || run pkill -USR2 -x waybar || true
 ! grep -qx mako "$RELOAD" || run makoctl reload || true
-! grep -qx nftables "$RELOAD" || run sudo systemctl reload nftables.service || true
+# only the tables in the file are made anew; NetworkManager's and Tailscale's stay
+! grep -qx nftables "$RELOAD" || run sudo nft -f /etc/nftables.conf || say "! firewall not loaded; run: sudo nft -f /etc/nftables.conf"
 ! grep -qx NetworkManager "$RELOAD" || run sudo systemctl reload NetworkManager.service || true
 [ ! -s "$SSHD" ] || run sudo systemctl try-reload-or-restart sshd.service
 run "$HOME/.local/bin/zen" gtklock || say "! gtklock module not built; run: zen gtklock"

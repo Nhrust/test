@@ -33,7 +33,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Where | Left click | Right click | Wheel |
 |---|---|---|---|
-| player (its icon and ▶/⏸) | sound | play/pause; middle: mute the player | next / previous track |
+| player (its icon and ▶/⏸) | sound | play/pause; middle: mute the player | previous / next track |
 | clock, bell | notifications, calendar, weather | do not disturb on/off; middle: clear all | — |
 | weather | notifications, calendar, weather | refresh now | — |
 | brightness, caffeine | displays | caffeine on/off | brightness |
