@@ -733,6 +733,9 @@ class TestNetwork(Zen):
         self.idle()
         p = self.conn("u-zen-hotspot")["props"]
         self.assertEqual((p["802-11-wireless.band"], p["802-11-wireless.channel"]), ("a", "36"))
+        # WPA2 alone: phones refuse a hotspot that also offers WPA with TKIP
+        self.assertEqual((p["802-11-wireless-security.proto"], p["802-11-wireless-security.pairwise"],
+                          p["802-11-wireless-security.group"]), ("rsn", "ccmp", "ccmp"))
         self.assertIn("systemctl start zen-hotspot.service", self.calls("systemctl"))
         options, rows = self.menu("zen-network", INIT, "", "hotspot")
         self.assertEqual(self.texts(rows)[1], "Hotspot · ‹ on ›")
@@ -818,6 +821,15 @@ class TestNetwork(Zen):
         self.assertNotIn("guard", self.load())
         self.hotspot_on()
         self.assertEqual(self.guard()["applied"]["quota_mb"], 500)
+
+    def test_stale_busy_mark(self):
+        """A mark left by background work that died does not hold the menu forever."""
+        busy = self.run_dir / "zen-network-busy"
+        busy.write_text("zen-hotspot")
+        os.utime(busy, (time.time() - 600, time.time() - 600))
+        _o, rows = self.menu("zen-network", SELECT, "view:hotspot", "main")
+        self.assertEqual(self.texts(rows)[1], "Hotspot · ‹ off ›")
+        self.assertFalse(busy.exists())
 
     def test_hotspot_radar_channel(self):
         self.state["nm"]["aps"][0]["chan"] = 100

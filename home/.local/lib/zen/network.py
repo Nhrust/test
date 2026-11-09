@@ -39,6 +39,7 @@ SELF = os.path.realpath(sys.argv[0])
 THEME = zen.CONFIG_HOME / "rofi/network.rasi"
 PAL = zen.palette()
 BUSY = zen.RUNTIME / "zen-network-busy"
+VIEW = zen.RUNTIME / "zen-network-view"  # the view on screen, for the refresh after background work
 
 INIT, SELECT, ESC, LEFT, RIGHT = 0, 1, 12, 13, 14
 
@@ -514,10 +515,14 @@ def hotspot_start():
             notify(False, _("The hotspot cannot start on channel {}").format(chan),
                    _("Wi-Fi is connected on a radar channel; only a router may start a network there"))
             return
-        kind = "a" if band(active["freq"]).startswith("5") else "bg"
-        modify(c["uuid"], "802-11-wireless.band", kind, "802-11-wireless.channel", str(chan))
+        kind, chan = ("a" if band(active["freq"]).startswith("5") else "bg"), str(chan)
     else:
-        modify(c["uuid"], "802-11-wireless.band", "bg", "802-11-wireless.channel", "0")
+        kind, chan = "bg", "0"
+    # WPA2 alone, as "nmcli device wifi hotspot" makes it: phones refuse a hotspot
+    # that also offers the old WPA with TKIP
+    modify(c["uuid"], "802-11-wireless.band", kind, "802-11-wireless.channel", chan,
+           "802-11-wireless-security.proto", "rsn", "802-11-wireless-security.pairwise", "ccmp",
+           "802-11-wireless-security.group", "ccmp")
     res = run("systemctl", "start", f"{HOTSPOT}.service")
     if res.returncode != 0:
         notify(False, _("Could not start the hotspot"), last_line(res))
@@ -594,7 +599,12 @@ def exit_node(ts):
 # ---------------------------------------------------------------- background work and prompts
 
 def busy():
+    """What the background work is busy with; a mark older than NetworkManager's own
+    time limit for connecting was left by work that died, and means nothing."""
     try:
+        if time.time() - BUSY.stat().st_mtime > 150:
+            BUSY.unlink(missing_ok=True)
+            return ""
         return BUSY.read_text().strip()
     except OSError:
         return ""
@@ -789,6 +799,12 @@ def worker(action, target):
         BUSY.unlink(missing_ok=True)
     if back:
         reopen(back)
+    elif our_rofi():
+        # the menu is still open on the state before the work: show it as it is now
+        try:
+            reopen(VIEW.read_text().strip() or "main")
+        except OSError:
+            reopen("main")
     return 0
 
 
@@ -864,6 +880,10 @@ class Menu:
         option("prompt", _("network"))
         option("message", header())
         option("data", self.view)
+        try:
+            VIEW.write_text(self.view)
+        except OSError:
+            pass
         option("markup-rows", "true")
         option("no-custom", "true")
         option("use-hot-keys", "true")

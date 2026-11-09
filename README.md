@@ -33,12 +33,13 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Where | Left click | Right click | Wheel |
 |---|---|---|---|
-| player | pause | next track; middle: previous | seek ±5 s |
+| player (icon; the track on hover) | pause | next track; middle: previous | seek ±5 s |
 | clock, bell | notifications, calendar, weather | do not disturb on/off; middle: clear all | — |
 | weather | notifications, calendar, weather | refresh now | — |
 | brightness, caffeine | displays | caffeine on/off | brightness |
 | volume | sound | mute | volume |
 | network | network | Wi-Fi on/off | — |
+| hotspot (while on: devices) | hotspot | — | — |
 | muted microphone | unmute | — | — |
 | profile, battery | power | next power profile | — |
 

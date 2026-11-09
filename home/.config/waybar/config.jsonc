@@ -90,8 +90,12 @@
         "tooltip": false
     },
     "mpris": {
-        "format": "{player_icon}  {dynamic}",
-        "format-paused": "{player_icon}  {dynamic}",
+        "format": "{player_icon} {status_icon}",
+        "format-paused": "{player_icon} {status_icon}",
+        "status-icons": {
+            "playing": "󰐊",
+            "paused": "󰏤"
+        },
         "player-icons": {
             "default": "󰝚",
             "firefox": "󰈹",
@@ -103,8 +107,7 @@
         "dynamic-order": ["artist", "title"],
         "dynamic-importance-order": ["title", "artist"],
         "dynamic-separator": " — ",
-        "dynamic-len": 30,
-        "title-len": 30,
+        "dynamic-len": 80,
         "tooltip-format": "{player}: {dynamic}",
         "on-scroll-up": "playerctl --player=playerctld position 5+",
         "on-scroll-down": "playerctl --player=playerctld position 5-",
