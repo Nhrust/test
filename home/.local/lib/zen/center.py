@@ -3,7 +3,7 @@
   zen-center          open the menu (a second call closes it)
   zen-center dnd      Waybar module: unread count; a crossed bell while do-not-disturb is on,
                       a bell when notifications went to the history unseen
-  zen-center read ID  mark a notification as seen (mako runs it on a click)
+  zen-center seen ID  keep a notification out of the list and the count (mako runs it on a click)
   zen-center dnd toggle   switch do-not-disturb on or off
   zen-center clear    remove all notifications
   zen-center fetch    download the weather into the cache (at most every 90 s)
@@ -652,8 +652,9 @@ def main():
     if sys.argv[1] == "dnd" and sys.argv[2:] == ["toggle"]:
         dnd_toggle()
         return 0
-    if sys.argv[1] == "read" and sys.argv[2:3] and sys.argv[2].isdigit():
-        mark_read(f"a:{sys.argv[2]}")
+    if sys.argv[1] == "seen" and sys.argv[2:3] and sys.argv[2].isdigit():
+        hide([int(sys.argv[2])])
+        refresh_bar()
         return 0
     if sys.argv[1] == "dnd":
         if dnd_on():

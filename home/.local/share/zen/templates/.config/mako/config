@@ -12,10 +12,11 @@ anchor=top-right
 default-timeout=5000
 icon-path=/usr/share/icons/Papirus-Dark
 max-icon-size=32
-# the panel bell counts notifications that went to the history unseen;
-# a click on one marks it seen
-on-notify=exec pkill -RTMIN+11 -x waybar
-on-button-left=exec ~/.local/bin/zen-center read "$id"; makoctl invoke -n "$id"; makoctl dismiss -n "$id"
+# The panel bell counts notifications that went to the history unseen: it is
+# told when one arrives and again when it times out (default-timeout above).
+# A notification clicked on screen was seen, so it leaves no trace.
+on-notify=exec pkill -RTMIN+11 -x waybar; sleep 5.2; pkill -RTMIN+11 -x waybar
+on-button-left=exec ~/.local/bin/zen-center seen "$id"; makoctl invoke -n "$id"; makoctl dismiss -n "$id"
 
 [urgency=low]
 text-color={{muted}}

@@ -283,8 +283,8 @@ class TestCenter(Zen):
         """Without do-not-disturb the bell shows notifications that went to the history unseen."""
         bell = self.run_cmd(self.home / ".local/bin/zen-center", "dnd").stdout.strip()
         self.assertEqual(bell, "\U000F009A 2")
-        self.run_cmd(self.home / ".local/bin/zen-center", "read", "12")
-        self.run_cmd(self.home / ".local/bin/zen-center", "read", "11")
+        self.run_cmd(self.home / ".local/bin/zen-center", "seen", "12")
+        self.run_cmd(self.home / ".local/bin/zen-center", "seen", "11")
         self.assertEqual(self.run_cmd(self.home / ".local/bin/zen-center", "dnd").stdout.strip(), "")
 
     def test_dnd_toggle_command(self):
