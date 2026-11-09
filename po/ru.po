@@ -653,3 +653,133 @@ msgid_plural "{} devices online"
 msgstr[0] "{} устройство в сети"
 msgstr[1] "{} устройства в сети"
 msgstr[2] "{} устройств в сети"
+
+# network settings
+msgid "Address with the mask, e.g. 192.168.1.50/24"
+msgstr "Адрес с маской, например 192.168.1.50/24"
+
+msgid "Address"
+msgstr "Адрес"
+
+msgid "Automatic · from the network"
+msgstr "Автоматически · от сети"
+
+msgid "Change…"
+msgstr "Сменить…"
+
+msgid "Connect automatically"
+msgstr "Автоподключение"
+
+msgid "Copy"
+msgstr "Скопировать"
+
+msgid "Could not change the password"
+msgstr "Не удалось сменить пароль"
+
+msgid "Could not change the settings"
+msgstr "Не удалось изменить настройки"
+
+msgid "DNS over TLS"
+msgstr "DNS over TLS"
+
+msgid "Hidden network…"
+msgstr "Скрытая сеть…"
+
+msgid "MAC address"
+msgstr "MAC-адрес"
+
+msgid "Metered"
+msgstr "Лимитное"
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "Name of the hidden network"
+msgstr "Имя скрытой сети"
+
+msgid "NetworkManager did not give the password"
+msgstr "NetworkManager не отдал пароль"
+
+msgid "New password for {}"
+msgstr "Новый пароль для {}"
+
+msgid "Not an address: {}"
+msgstr "Это не адрес: {}"
+
+msgid "Now"
+msgstr "Сейчас"
+
+msgid "Password changed: {}"
+msgstr "Пароль изменён: {}"
+
+msgid "Password copied"
+msgstr "Пароль скопирован"
+
+msgid "Point the phone camera at the code: {}"
+msgstr "Наведи камеру телефона на код: {}"
+
+msgid "QR code for a phone"
+msgstr "QR-код для телефона"
+
+msgid "Saved networks"
+msgstr "Сохранённые сети"
+
+msgid "Servers separated by commas; empty means the network's own"
+msgstr "Серверы через запятую; пусто — от сети"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "The QR code needs the qrencode package"
+msgstr "Для QR-кода нужен пакет qrencode"
+
+msgid "The router's address, e.g. 192.168.1.1"
+msgstr "Адрес роутера, например 192.168.1.1"
+
+msgid "Wi-Fi network {}; empty when it has none"
+msgstr "Сеть Wi-Fi {}; пусто, если пароля нет"
+
+msgid "Your own"
+msgstr "Свой"
+
+msgid "Your own…"
+msgstr "Свой…"
+
+msgid "always"
+msgstr "всегда"
+
+msgid "automatic"
+msgstr "авто"
+
+msgid "in range"
+msgstr "рядом"
+
+msgid "local network only"
+msgstr "только локальная"
+
+msgid "manual"
+msgstr "вручную"
+
+msgid "new on every connection"
+msgstr "новый при подключении"
+
+msgid "no"
+msgstr "нет"
+
+msgid "own for this network"
+msgstr "свой для сети"
+
+msgid "permanent"
+msgstr "постоянный"
+
+msgid "when possible"
+msgstr "если можно"
+
+msgid "yes"
+msgstr "да"
+
+msgid "blocks dangerous sites"
+msgstr "блокирует опасные сайты"
+
+msgid "blocks ads"
+msgstr "без рекламы"

@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(os.environ["ZEN_MOCK"])
+ROOT = Path(os.environ.get("ZEN_MOCK", "."))
 STATE = ROOT / "state.json"
 NAME = Path(sys.argv[0]).name
 ARGS = sys.argv[1:]
@@ -257,79 +257,169 @@ def notify_send(st):
     return 0
 
 
+WIFI, WIRED = "802-11-wireless", "802-3-ethernet"
+
+
 def nmcli(st):
+    """NetworkManager: nm.devices [[name, kind]], nm.conns (saved connections with
+    their props and psk), nm.aps (visible networks), nm.ip (addresses per device)."""
     nm = st.get("nm")
     if nm is None:
         return 0
-    a = [x for x in ARGS if x not in ("--terse", "-t", "--ask")]
-    if a[:1] == ["--fields"]:
-        a = a[2:]
+    a, getv, i = [], None, 0
+    while i < len(ARGS):
+        x = ARGS[i]
+        if x in ("--terse", "-t", "--ask", "--show-secrets", "-s"):
+            i += 1
+        elif x in ("--fields", "-f", "--get-values", "-g"):
+            if x in ("--get-values", "-g"):
+                getv = ARGS[i + 1]
+            i += 2
+        else:
+            a.append(x)
+            i += 1
+    conns = nm["conns"]
 
     def esc(v):
         return str(v).replace("\\", "\\\\").replace(":", "\\:")
 
+    def find(how, value):
+        key = "uuid" if how == "uuid" else "name"
+        return next((c for c in conns if c[key] == value), None)
+
+    def dev_of(kind):
+        return next((d[0] for d in nm["devices"] if d[1] == kind), None)
+
+    def activate(c):
+        for o in conns:
+            if o["type"] == c["type"]:
+                o["device"] = ""
+        c["device"] = dev_of("wifi" if c["type"] == WIFI else "ethernet")
+
+    def active_ssid():
+        c = next((c for c in conns if c["type"] == WIFI and c["device"]), None)
+        return c["props"]["802-11-wireless.ssid"] if c else None
+
     if a == ["device"]:
-        for d in nm["devices"]:
-            print(":".join(esc(x) for x in d))
+        for name, kind in nm["devices"]:
+            c = next((c for c in conns if c["device"] == name), None)
+            if c:
+                state = "connected"
+            elif kind == "wifi":
+                state = "disconnected" if nm["wifi"] else "unavailable"
+            else:
+                state = "disconnected" if nm.get("cable") else "unavailable"
+            print(":".join(esc(x) for x in (name, kind, state, c["name"] if c else "", c["uuid"] if c else "")))
     elif a[:2] == ["radio", "wifi"]:
         if a[2:]:
             nm["wifi"] = a[2] == "on"
-            for d in nm["devices"]:
-                if d[1] == "wifi":
-                    d[2:] = ["connected", nm["active"]] if nm["wifi"] and nm["active"] else \
-                        ["disconnected" if nm["wifi"] else "unavailable", ""]
+            if not nm["wifi"]:
+                for c in conns:
+                    if c["type"] == WIFI:
+                        c["device"] = ""
         else:
             print("enabled" if nm["wifi"] else "disabled")
     elif a[:3] == ["device", "wifi", "list"]:
         if "yes" in a:
             nm["scans"] = nm.get("scans", 0) + 1
+        now = active_ssid()
         for ap in nm["aps"] if nm["wifi"] else []:
-            print(":".join(esc(x) for x in ("*" if ap["ssid"] == nm["active"] else " ", ap["ssid"],
+            print(":".join(esc(x) for x in ("*" if ap["ssid"] == now else " ", ap["ssid"],
                                              ap["signal"], ap["security"], ap["freq"], ap["chan"])))
-    elif a[:2] == ["device", "wifi"] and a[2:3] == ["rescan"]:
+    elif a[:3] == ["device", "wifi", "rescan"]:
         pass
-    elif a[:2] == ["connection", "show"]:
-        for name in nm["saved"]:
-            print(f"{esc(name)}:802-11-wireless")
-        print("Wired connection 1:802-3-ethernet")
+    elif a == ["connection", "show"]:
+        for c in conns:
+            print(":".join(esc(x) for x in (c["name"], c["uuid"], c["type"], c["device"])))
+        print("lo:0000-lo:loopback:lo")
+    elif a[:3] == ["connection", "show", "uuid"]:
+        c = find("uuid", a[3])
+        if c is None:
+            print(f"Error: {a[3]} - no such connection profile.", file=sys.stderr)
+            return 10
+        if getv:
+            print(c.get("psk", "") if "psk" in getv else c["props"].get(getv, ""))
+        else:
+            for key, value in [("connection.id", c["name"]), ("connection.uuid", c["uuid"]),
+                               ("connection.type", c["type"])] + list(c["props"].items()):
+                print(f"{key}:{esc(value)}")
+    elif a[:3] == ["connection", "modify", "uuid"]:
+        c = find("uuid", a[3])
+        pairs = a[4:]
+        for key, value in zip(pairs[::2], pairs[1::2]):
+            if key in nm.get("refuse", []):
+                print(f"Error: failed to modify {key}: invalid value", file=sys.stderr)
+                return 2
+            c["props"][key] = value
+    elif a[:2] == ["connection", "edit"]:
+        c = find(a[2], a[3])
+        for line in sys.stdin.read().splitlines():
+            parts = line.split(" ", 2)
+            if parts[0] == "set" and len(parts) == 3:
+                if parts[1].endswith(".psk"):
+                    c["psk"] = parts[2]
+                else:
+                    c["props"][parts[1]] = parts[2]
+    elif a[:2] == ["connection", "up"]:
+        c = find(a[2], a[3])
+        if c is None:
+            return 10
+        activate(c)
+    elif a[:2] == ["connection", "delete"]:
+        nm["conns"] = [c for c in conns if c["uuid" if a[2] == "uuid" else "name"] != a[3]]
+    elif a[:2] == ["device", "reapply"]:
+        pass
     elif a[:2] == ["device", "show"]:
         for key, values in nm["ip"].get(a[2], {}).items():
-            for i, v in enumerate(values, 1):
-                print(f"{key}[{i}]:{esc(v)}")
+            for n, v in enumerate(values, 1):
+                print(f"{key}[{n}]:{esc(v)}")
     elif a[:3] == ["device", "wifi", "connect"]:
         ssid = a[3]
         want = nm["passwords"].get(ssid)
-        if want is not None and sys.stdin.read().strip() != want:
+        given = sys.stdin.read().strip() if "--ask" in ARGS else ""
+        if want is not None and given != want:
             print("Error: Connection activation failed: Secrets were required, but not provided.",
                   file=sys.stderr)
             return 4
-        nm["saved"] = sorted(set(nm["saved"]) | {ssid})
-        nm["active"] = ssid
-        for d in nm["devices"]:
-            if d[1] == "wifi":
-                d[2:] = ["connected", ssid]
-    elif a[:3] == ["connection", "up", "id"]:
-        nm["active"] = a[3]
-        for d in nm["devices"]:
-            if d[1] == "wifi":
-                d[2:] = ["connected", a[3]]
-    elif a[:3] == ["connection", "delete", "id"]:
-        nm["saved"] = [x for x in nm["saved"] if x != a[3]]
-        if nm["active"] == a[3]:
-            nm["active"] = ""
-            for d in nm["devices"]:
-                if d[1] == "wifi":
-                    d[2:] = ["disconnected", ""]
+        c = next((c for c in conns if c["props"].get("802-11-wireless.ssid") == ssid), None)
+        if c is None:
+            c = new_conn(ssid, ssid, WIFI, secure=want is not None, psk=given)
+            if "hidden" in a:
+                c["props"]["802-11-wireless.hidden"] = "yes"
+            conns.append(c)
+        activate(c)
     elif a[:2] == ["device", "disconnect"]:
-        for d in nm["devices"]:
-            if d[0] == a[2]:
-                d[2:] = ["disconnected", ""]
-                if d[1] == "wifi":
-                    nm["active"] = ""
+        for c in conns:
+            if c["device"] == a[2]:
+                c["device"] = ""
     elif a[:2] == ["device", "connect"]:
-        for d in nm["devices"]:
-            if d[0] == a[2]:
-                d[2:] = ["connected", "Wired connection 1"]
+        c = next((c for c in conns if c["type"] == WIRED), None)
+        if c and nm.get("cable"):
+            activate(c)
+    return 0
+
+
+def new_conn(uuid, name, kind, secure=True, psk="", device=""):
+    """A saved connection the way nmcli shows its settings."""
+    props = {"connection.autoconnect": "yes", "connection.metered": "unknown",
+             "connection.dns-over-tls": "-1 (default)",
+             "ipv4.method": "auto", "ipv4.addresses": "", "ipv4.gateway": "", "ipv4.dns": "",
+             "ipv4.ignore-auto-dns": "no", "ipv6.method": "auto", "ipv6.dns": "", "ipv6.ignore-auto-dns": "no"}
+    if kind == WIFI:
+        props.update({"802-11-wireless.ssid": name, "802-11-wireless.cloned-mac-address": "",
+                      "802-11-wireless.hidden": "no"})
+        if secure:
+            props["802-11-wireless-security.key-mgmt"] = "wpa-psk"
+    else:
+        props["802-3-ethernet.cloned-mac-address"] = ""
+    return {"uuid": uuid, "name": name, "type": kind, "device": device, "props": props, "psk": psk}
+
+
+def qrencode(st):
+    data = sys.stdin.read()
+    with open(ROOT / "qr.txt", "w") as f:
+        f.write(data)
+    print("█▀▀█\n█▄▄█")
     return 0
 
 
@@ -360,6 +450,9 @@ def rofi(st):
     if "-dmenu" in ARGS:
         sys.stdin.read()
         answer = st.get("rofi_input")
+        if isinstance(answer, list):
+            # one answer per prompt, in order
+            answer = answer.pop(0) if answer else None
         if answer is None:
             return 1
         print(answer)
@@ -378,7 +471,7 @@ HANDLERS = {
     "makoctl": makoctl, "wpctl": wpctl, "pw-dump": pw_dump, "busctl": busctl, "cliphist": cliphist,
     "niri": niri, "systemctl": systemctl, "brightnessctl": brightnessctl, "sudo": sudo,
     "playerctl": playerctl, "pgrep": pgrep, "notify-send": notify_send, "gtklock": gtklock, "pacman": pacman,
-    "nmcli": nmcli, "tailscale": tailscale, "rofi": rofi,
+    "nmcli": nmcli, "tailscale": tailscale, "rofi": rofi, "qrencode": qrencode,
 }
 
 
@@ -387,7 +480,7 @@ def main():
     st = load()
     before = json.dumps(st, sort_keys=True)
     if NAME in ("wl-copy",):
-        sys.stdin.read()
+        (ROOT / "clipboard.txt").write_text(sys.stdin.read())
     rc = HANDLERS.get(NAME, passive)(st)
     # only calls that change something write, so a read running at the same
     # time as a background change cannot undo it

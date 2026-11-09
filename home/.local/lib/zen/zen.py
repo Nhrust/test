@@ -140,8 +140,9 @@ def switch(retv, current):
 def detach(*cmd):
     """Start a program that outlives the menu. Rofi marks the programs it runs
     with ROFI_OUTSIDE and a new Rofi refuses to start while that one is open, so
-    the mark is left out: the program may open the next menu or a prompt."""
-    env = {k: v for k, v in os.environ.items() if not k.startswith("ROFI_")}
+    the mark is left out: the program may open the next menu or a prompt.
+    So is ZEN_MENU_VIEW, the view a menu was opened on."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("ROFI_") and k != "ZEN_MENU_VIEW"}
     subprocess.Popen([str(c) for c in cmd], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                      stderr=subprocess.DEVNULL, start_new_session=True, env=env)
 

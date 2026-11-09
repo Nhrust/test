@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 MOCKED = ["makoctl", "wpctl", "pw-dump", "busctl", "cliphist", "wl-copy", "niri", "systemctl",
           "brightnessctl", "ddcutil", "kanshictl", "pkill", "pgrep", "notify-send", "sudo",
-          "nmcli", "gsettings", "setvtrgb", "rofi", "playerctl", "gtklock", "pacman", "tailscale"]
+          "nmcli", "gsettings", "setvtrgb", "rofi", "playerctl", "gtklock", "pacman", "tailscale", "qrencode"]
 
 SELECT, DELETE, ESC, LEFT, RIGHT, TAB = 1, 3, 12, 13, 14, 15
 
@@ -441,14 +441,20 @@ class TestNetwork(Zen):
 
     def setUp(self):
         super().setUp()
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from mock import new_conn, WIFI, WIRED
+        home = new_conn("u-home", "Home", WIFI, psk="hunter2", device="wlan0")
+        work = new_conn("u-work", "Work", WIFI, psk="w0rk")
+        wired = new_conn("u-wired", "Wired connection 1", WIRED)
         self.state["nm"] = {
-            "wifi": True, "active": "Home",
-            "devices": [["wlan0", "wifi", "connected", "Home"], ["enp1s0", "ethernet", "unavailable", ""]],
+            "wifi": True, "cable": False,
+            "devices": [["wlan0", "wifi"], ["enp1s0", "ethernet"]],
+            "conns": [home, work, wired],
             "aps": [{"ssid": "Home", "signal": 82, "security": "WPA2", "freq": "5180 MHz", "chan": 36},
                     {"ssid": "Cafe: free", "signal": 40, "security": "", "freq": "2412 MHz", "chan": 1},
                     {"ssid": "Neighbour", "signal": 55, "security": "WPA3", "freq": "2437 MHz", "chan": 6},
                     {"ssid": "Home", "signal": 30, "security": "WPA2", "freq": "2462 MHz", "chan": 11}],
-            "saved": ["Home"], "passwords": {"Neighbour": "secret"},
+            "passwords": {"Neighbour": "secret", "Attic": "upstairs"},
             "ip": {"wlan0": {"IP4.ADDRESS": ["192.168.1.23/24"], "IP4.GATEWAY": ["192.168.1.1"],
                              "IP4.DNS": ["192.168.1.1"],
                              "IP6.ADDRESS": ["fd00::23/64", "fe80::1/64"]}}}
@@ -469,33 +475,41 @@ class TestNetwork(Zen):
             time.sleep(0.1)
         return False
 
+    def conn(self, uuid):
+        return next(c for c in self.load()["nm"]["conns"] if c["uuid"] == uuid)
+
+    def wifi_active(self, st):
+        return next((c["name"] for c in st["nm"]["conns"] if c["type"] == "802-11-wireless" and c["device"]), None)
+
+    def infos(self, rows):
+        return [r[1]["info"] for r in rows]
+
     def test_main(self):
         options, rows = self.menu("zen-network")
         texts = self.texts(rows)
         self.assertEqual(texts[0], "Wi-Fi · ‹ on ›")
         self.assertTrue(texts[1].startswith("Home · connected"))
+        self.assertIn("view:saved", self.infos(rows))
         self.assertTrue(any(t.startswith("Ethernet · not connected") for t in texts))
         self.assertTrue(any(t.startswith("Devices · 1/2") for t in texts))
         self.assertTrue(any(t.startswith("Exit node · none") for t in texts))
-        self.assertIn("Home", options["message"])
         self.assertIn("5 GHz · 82%", options["message"])
         self.assertIn("1 device online", options["message"])
         self.assertNotIn("100.64", "".join(texts) + options["message"])
 
     def test_networks(self):
         options, rows = self.menu("zen-network", SELECT, "view:wifi", "main")
-        infos = [r[1]["info"] for r in rows]
-        self.assertEqual(infos[:2], ["view:main", "rescan"])
+        infos = self.infos(rows)
+        self.assertEqual(infos[:3], ["view:main", "rescan", "hidden"])
         # one row per name, the connected one first, the colon in a name survives
-        self.assertEqual(infos[2:], ["net:Home", "net:Neighbour", "net:Cafe: free"])
+        self.assertEqual(infos[3:], ["net:Home", "net:Neighbour", "net:Cafe: free"])
         self.assertEqual(rows[int(options["new-selection"])][1]["info"], "net:Home")
-        self.assertIn("connected", rows[2][0])
         self.menu("zen-network", SELECT, "rescan", "wifi")
         self.assertEqual(self.load()["nm"]["scans"], 1)
 
     def test_open_network(self):
         self.menu("zen-network", SELECT, "net:Cafe: free", "wifi")
-        self.assertTrue(self.wait_for(lambda st: st["nm"]["active"] == "Cafe: free"))
+        self.assertTrue(self.wait_for(lambda st: self.wifi_active(st) == "Cafe: free"))
         self.assertFalse(self.calls("rofi"))
 
     def test_password(self):
@@ -504,7 +518,7 @@ class TestNetwork(Zen):
         self.save()
         options, rows = self.menu("zen-network", SELECT, "net:Neighbour", "wifi")
         self.assertEqual(rows, [], "the menu closes for the prompt")
-        self.assertTrue(self.wait_for(lambda st: st["nm"]["active"] == "Neighbour"))
+        self.assertTrue(self.wait_for(lambda st: self.wifi_active(st) == "Neighbour"))
         self.assertTrue(any("-password" in c for c in self.calls("rofi")))
         self.assertFalse(any("secret" in c for c in self.calls()))
 
@@ -517,7 +531,7 @@ class TestNetwork(Zen):
                 break
             time.sleep(0.1)
         self.assertTrue(any("Could not connect: Neighbour" in c for c in self.calls("notify-send")))
-        self.assertEqual(self.load()["nm"]["active"], "Home")
+        self.assertEqual(self.wifi_active(self.load()), "Home")
 
     def test_cancelled_password(self):
         self.menu("zen-network", SELECT, "net:Neighbour", "wifi")
@@ -529,6 +543,15 @@ class TestNetwork(Zen):
         self.assertFalse(any("wifi connect" in c for c in self.calls("nmcli")))
         self.assertFalse((self.run_dir / "zen-network-busy").exists())
 
+    def test_hidden_network(self):
+        self.state["rofi_input"] = ["Attic", "upstairs"]
+        self.save()
+        _o, rows = self.menu("zen-network", SELECT, "hidden", "wifi")
+        self.assertEqual(rows, [])
+        self.assertTrue(self.wait_for(lambda st: self.wifi_active(st) == "Attic"))
+        self.assertEqual(self.conn("Attic")["props"]["802-11-wireless.hidden"], "yes")
+        self.assertFalse(any("upstairs" in c for c in self.calls()))
+
     def test_wifi_toggle(self):
         options, rows = self.menu("zen-network", RIGHT, "adj:wifi", "main")
         self.assertEqual(self.texts(rows)[0], "Wi-Fi · ‹ off ›")
@@ -539,27 +562,154 @@ class TestNetwork(Zen):
 
     def test_details(self):
         options, rows = self.menu("zen-network", SELECT, "view:dev:wlan0", "main")
-        infos = [r[1]["info"] for r in rows]
+        infos = self.infos(rows)
         self.assertIn("copy:192.168.1.23", infos)
         self.assertIn("copy:fd00::23", infos)
         self.assertNotIn("copy:fe80::1", infos)
-        self.assertIn("forget:Home", infos)
+        self.assertIn("view:conn:u-home", infos)
+        self.assertIn("forget:u-home", infos)
         self.assertEqual(rows[int(options["new-selection"])][1]["info"], "copy:Home")
         self.menu("zen-network", SELECT, "copy:192.168.1.23", "dev:wlan0")
-        self.assertIn("wl-copy -- 192.168.1.23", self.calls("wl-copy"))
-        _o, rows = self.menu("zen-network", SELECT, "forget:Home", "dev:wlan0")
-        self.assertEqual(self.load()["nm"]["saved"], [])
+        self.assertEqual((self.mock / "clipboard.txt").read_text(), "192.168.1.23")
+        _o, rows = self.menu("zen-network", SELECT, "forget:u-home", "dev:wlan0")
+        self.assertNotIn("u-home", [c["uuid"] for c in self.load()["nm"]["conns"]])
         self.assertEqual(_o["data"], "main")
-        _o, _rows = self.menu("zen-network", ESC, "", "dev:wlan0")
-        self.assertEqual(_o["data"], "main")
+
+    def test_settings(self):
+        options, rows = self.menu("zen-network", SELECT, "view:conn:u-home", "dev:wlan0")
+        texts = self.texts(rows)
+        self.assertEqual(self.infos(rows)[0], "view:dev:wlan0")
+        self.assertIn("Connect automatically · ‹ on ›", texts)
+        self.assertIn("Metered · ‹ no ›", texts)
+        self.assertIn("MAC address · ‹ permanent ›", texts)
+        self.assertIn("Password · ••••••••  ›", texts)
+        self.assertIn("DNS · automatic  ›", texts)
+        self.assertIn("DNS over TLS · ‹ off ›", texts)
+        self.assertIn("IPv4 · automatic  ›", texts)
+        self.assertNotIn("activate:u-home", self.infos(rows), "it is connected already")
+        self.assertNotIn("hunter2", "".join(texts))
+        self.menu("zen-network", RIGHT, "adj:auto:u-home", "conn:u-home")
+        self.menu("zen-network", SELECT, "adj:metered:u-home", "conn:u-home")
+        self.menu("zen-network", LEFT, "adj:dot:u-home", "conn:u-home")
+        _o, rows = self.menu("zen-network", RIGHT, "adj:mac:u-home", "conn:u-home")
+        p = self.conn("u-home")["props"]
+        self.assertEqual(p["connection.autoconnect"], "no")
+        self.assertEqual(p["connection.metered"], "yes")
+        self.assertEqual(p["connection.dns-over-tls"], "yes")
+        self.assertEqual(p["802-11-wireless.cloned-mac-address"], "stable")
+        self.assertIn("MAC address · ‹ own for this network ›", self.texts(rows))
+        self.assertTrue(any(c.startswith("nmcli device reapply wlan0") for c in self.calls("nmcli")))
+        # a new MAC address reconnects
+        self.assertTrue(self.wait_for(lambda st: any("connection up uuid u-home" in c
+                                                     for c in self.calls("nmcli"))))
+        options, _rows = self.menu("zen-network", ESC, "", "conn:u-home")
+        self.assertEqual(options["data"], "dev:wlan0")
+
+    def test_saved(self):
+        _o, rows = self.menu("zen-network", SELECT, "view:saved", "main")
+        self.assertEqual(self.infos(rows), ["view:main", "view:conn:u-home", "view:conn:u-work"])
+        _o, rows = self.menu("zen-network", SELECT, "view:conn:u-work", "saved")
+        self.assertEqual(self.infos(rows)[:2], ["view:saved", "activate:u-work"])
+        _o, rows = self.menu("zen-network", SELECT, "forget:u-work", "conn:u-work")
+        self.assertEqual(_o["data"], "saved")
+        self.assertEqual(self.infos(rows), ["view:main", "view:conn:u-home"])
+
+    def test_password_view(self):
+        _o, rows = self.menu("zen-network", SELECT, "view:pw:u-home", "conn:u-home")
+        self.assertNotIn("hunter2", "".join(self.texts(rows)))
+        options, rows = self.menu("zen-network", SELECT, "reveal:u-home", "pw:u-home")
+        self.assertEqual(options["data"], "pwshow:u-home")
+        self.assertIn("Password · hunter2", self.texts(rows))
+        options, _rows = self.menu("zen-network", ESC, "", "pwshow:u-home")
+        self.assertEqual(options["data"], "conn:u-home")
+        self.menu("zen-network", SELECT, "copypw:u-home", "pw:u-home")
+        self.assertEqual((self.mock / "clipboard.txt").read_text(), "hunter2")
+        self.assertIn("wl-copy --sensitive", self.calls("wl-copy"))
+        self.assertFalse(any("hunter2" in c for c in self.calls()), "not in arguments or notifications")
+
+    def test_qr(self):
+        _o, rows = self.menu("zen-network", SELECT, "qr:u-home", "pw:u-home")
+        self.assertEqual(rows, [])
+        self.assertTrue(self.wait_for(lambda st: any(" -e " in c for c in self.calls("rofi"))))
+        self.assertEqual((self.mock / "qr.txt").read_text(), "WIFI:T:WPA;S:Home;P:hunter2;;")
+        # the menu comes back on the password view
+        self.assertTrue(self.wait_for(lambda st: any("zen-network list" in c for c in self.calls("rofi"))))
+        self.assertFalse(any("hunter2" in c for c in self.calls()))
+
+    def test_change_password(self):
+        self.state["rofi_input"] = ["n3w pass"]
+        self.save()
+        self.menu("zen-network", SELECT, "psk:u-home", "pw:u-home")
+        self.assertTrue(self.wait_for(lambda st: self.conn("u-home")["psk"] == "n3w pass"))
+        self.assertFalse(any("n3w" in c for c in self.calls()))
+
+    def test_dns(self):
+        _o, rows = self.menu("zen-network", SELECT, "view:dns:u-home", "conn:u-home")
+        self.assertEqual([r[0] for r in rows if r[1].get("active")], ["Automatic · from the network"])
+        _o, rows = self.menu("zen-network", SELECT, "dns:quad9:u-home", "dns:u-home")
+        p = self.conn("u-home")["props"]
+        self.assertEqual(p["ipv4.dns"], "9.9.9.9,149.112.112.112")
+        self.assertEqual(p["ipv4.ignore-auto-dns"], "yes")
+        self.assertEqual(p["ipv6.dns"], "2620:fe::fe,2620:fe::9")
+        self.assertTrue([r[0] for r in rows if r[1].get("active")][0].startswith("Quad9"))
+        self.state = self.load()
+        self.state["rofi_input"] = ["8.8.8.8, 2001:4860:4860::8888"]
+        self.save()
+        self.menu("zen-network", SELECT, "dns:custom:u-home", "dns:u-home")
+        self.assertTrue(self.wait_for(lambda st: self.conn("u-home")["props"]["ipv4.dns"] == "8.8.8.8"))
+        self.assertEqual(self.conn("u-home")["props"]["ipv6.dns"], "2001:4860:4860::8888")
+        _o, rows = self.menu("zen-network", SELECT, "view:conn:u-home", "dev:wlan0")
+        self.assertIn("DNS · 8.8.8.8, 2001:4860:4860::8888  ›", self.texts(rows))
+        self.menu("zen-network", SELECT, "dns:auto:u-home", "dns:u-home")
+        p = self.conn("u-home")["props"]
+        self.assertEqual((p["ipv4.dns"], p["ipv4.ignore-auto-dns"]), ("", "no"))
+
+    def test_ipv4_manual(self):
+        _o, rows = self.menu("zen-network", RIGHT, "adj:ip4m:u-home", "ip4:u-home")
+        p = self.conn("u-home")["props"]
+        self.assertEqual((p["ipv4.method"], p["ipv4.addresses"], p["ipv4.gateway"]),
+                         ("manual", "192.168.1.23/24", "192.168.1.1"))
+        self.assertIn("ip4addr:u-home", self.infos(rows))
+        self.state = self.load()
+        self.state["rofi_input"] = ["192.168.1.50"]
+        self.save()
+        self.menu("zen-network", SELECT, "ip4addr:u-home", "ip4:u-home")
+        self.assertTrue(self.wait_for(lambda st: self.conn("u-home")["props"]["ipv4.addresses"] ==
+                                      "192.168.1.50/24"))
+        self.menu("zen-network", LEFT, "adj:ip4m:u-home", "ip4:u-home")
+        p = self.conn("u-home")["props"]
+        self.assertEqual((p["ipv4.method"], p["ipv4.addresses"]), ("auto", ""))
+
+    def test_ipv6_off(self):
+        self.menu("zen-network", SELECT, "dns:cloudflare:u-home", "dns:u-home")
+        self.menu("zen-network", LEFT, "adj:ip6m:u-home", "ip6:u-home")
+        p = self.conn("u-home")["props"]
+        self.assertEqual((p["ipv6.method"], p["ipv6.dns"]), ("disabled", ""))
+        _o, rows = self.menu("zen-network", SELECT, "view:conn:u-home", "dev:wlan0")
+        self.assertIn("IPv6 · off  ›", self.texts(rows))
+        self.menu("zen-network", RIGHT, "adj:ip6m:u-home", "ip6:u-home")
+        p = self.conn("u-home")["props"]
+        self.assertEqual((p["ipv6.method"], p["ipv6.ignore-auto-dns"]), ("auto", "yes"))
+
+    def test_refused_change(self):
+        self.state["nm"]["refuse"] = ["connection.metered"]
+        self.save()
+        self.menu("zen-network", SELECT, "adj:metered:u-home", "conn:u-home")
+        self.assertTrue(any("Could not change the settings" in c for c in self.calls("notify-send")))
+
+    def test_opens_on_a_view(self):
+        res = self.run_cmd(self.home / ".local/bin/zen-network", "list",
+                           env={"ROFI_RETV": "0", "ZEN_MENU_VIEW": "dns:u-home"})
+        self.assertIn("\0data\x1fdns:u-home", res.stdout)
 
     def test_devices(self):
         """The list shows names and state; the address appears only inside a device."""
         _o, rows = self.menu("zen-network", SELECT, "view:ts", "main")
-        self.assertEqual([r[1]["info"] for r in rows], ["view:main", "view:peer:nodekey:a", "view:peer:nodekey:b"])
+        self.assertEqual(self.infos(rows), ["view:main", "view:peer:nodekey:a", "view:peer:nodekey:b"])
+        self.assertTrue(self.texts(rows)[1].startswith("nas · "), "the MagicDNS name, not the host name")
         self.assertNotIn("100.64", "".join(self.texts(rows)))
         _o, rows = self.menu("zen-network", SELECT, "view:peer:nodekey:a", "ts")
-        infos = [r[1]["info"] for r in rows]
+        infos = self.infos(rows)
         self.assertEqual(infos[0], "view:ts")
         self.assertIn("copy:100.64.0.2", infos)
         self.assertIn("copy:nas.tail1234.ts.net", infos)
@@ -577,10 +727,19 @@ class TestNetwork(Zen):
 
     def test_without_tailscale_and_wifi(self):
         self.state.pop("tailscale")
-        self.state["nm"]["devices"] = [["enp1s0", "ethernet", "connected", "Wired connection 1"]]
+        self.state["nm"]["devices"] = [["enp1s0", "ethernet"]]
+        self.state["nm"]["cable"] = True
+        self.state["nm"]["conns"][0]["device"] = ""
+        self.state["nm"]["conns"][2]["device"] = "enp1s0"
         self.save()
         _o, rows = self.menu("zen-network")
         self.assertEqual(self.texts(rows), ["Ethernet · connected  ›"])
+        _o, rows = self.menu("zen-network", SELECT, "view:dev:enp1s0", "main")
+        self.assertIn("view:conn:u-wired", self.infos(rows))
+        _o, rows = self.menu("zen-network", SELECT, "view:conn:u-wired", "dev:enp1s0")
+        self.assertNotIn("view:pw:u-wired", self.infos(rows))
+        self.menu("zen-network", RIGHT, "adj:mac:u-wired", "conn:u-wired")
+        self.assertEqual(self.conn("u-wired")["props"]["802-3-ethernet.cloned-mac-address"], "stable")
 
 
 class TestPower(Zen):
