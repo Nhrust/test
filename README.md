@@ -41,7 +41,7 @@ cp -r hosts/zen hosts/$(cat /etc/hostname)   # then edit it for this machine
 ```
 
 `deploy.sh` installs the packages, copies the files (every replaced file is
-saved to `~/zen-deploy-backup-<date>/`), removes what older versions installed
+saved to `~/.local/state/zen/backup-<date>/`), removes what older versions installed
 (`lists/removed.txt`), builds the translations, writes the colours with
 `zen apply`, sets the cursor, enables the services, rebuilds the boot image
 when its inputs changed and builds the gtklock module when gtklock changed.

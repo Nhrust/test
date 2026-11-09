@@ -8,7 +8,7 @@
 # console and boot menu) → cursor → services → initramfs/UKI if needed →
 # gtklock module.
 # Common files come first, then hosts/NAME overrides them. Every file that is
-# replaced is copied to ~/zen-deploy-backup-<date>/ first (or $ZEN_BACKUP),
+# replaced is copied to ~/.local/state/zen/backup-<date>/ first (or $ZEN_BACKUP),
 # and new files are listed in created.txt there.
 set -eu
 
@@ -31,7 +31,7 @@ if [ ! -d "$H" ]; then
 	ls "$ROOT/hosts"
 	exit 1
 fi
-BACKUP=${ZEN_BACKUP:-"$HOME/zen-deploy-backup-$(date +%Y%m%d-%H%M%S)"}
+BACKUP=${ZEN_BACKUP:-"${XDG_STATE_HOME:-$HOME/.local/state}/zen/backup-$(date +%Y%m%d-%H%M%S)"}
 REBUILD=$(mktemp)
 LOCALES=$(mktemp)
 SSHD=$(mktemp)
