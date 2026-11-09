@@ -1,0 +1,204 @@
+#!/usr/bin/python3 -I
+"""hotspot-guard — the hotspot's own rules in nftables (table inet zen_hotspot).
+
+  hotspot-guard apply     settings as JSON on standard input (from zen-network)
+  hotspot-guard status    traffic of each device as JSON
+  hotspot-guard kick MAC  disconnect a device now (it may connect again)
+  hotspot-guard tick      every minute (zen-hotspot-guard.timer): cut off the
+                          devices over the quota; a new day starts the count again
+  hotspot-guard stop      remove the table (zen-hotspot.service stops)
+
+Runs as root: the network menu calls it through sudo (/etc/sudoers allows this
+one program without a password) and checks nothing it is given is more than a
+setting: MAC addresses, whole numbers, one of two modes.
+
+The table only drops what the settings forbid; the hotspot itself is let
+through by /etc/nftables.conf. The traffic of a device is counted in both
+directions from the moment the hotspot starts, so turning it off and on, or a
+new day, starts the count again.
+"""
+import datetime
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+TABLE = "zen_hotspot"
+IFACE = "ap0"
+STATE = Path("/run/zen-hotspot.json")
+MAC = re.compile(r"^[0-9a-f]{2}(:[0-9a-f]{2}){5}$")
+LIMITS = {"rate_total": 100000, "rate_device": 100000, "quota_mb": 10 ** 7}
+
+
+def fail(text):
+    print(f"hotspot-guard: {text}", file=sys.stderr)
+    sys.exit(2)
+
+
+def nft(script):
+    res = subprocess.run(["nft", "-f", "-"], input=script, capture_output=True, text=True)
+    if res.returncode != 0:
+        fail(res.stderr.strip())
+
+
+def exists():
+    return subprocess.run(["nft", "list", "table", "inet", TABLE], capture_output=True).returncode == 0
+
+
+def settings():
+    """The settings from standard input, checked one by one."""
+    try:
+        given = json.load(sys.stdin)
+    except ValueError:
+        fail("settings are not JSON")
+    if not isinstance(given, dict):
+        fail("settings are not an object")
+    out = {"mode": given.get("mode", "all")}
+    if out["mode"] not in ("all", "known"):
+        fail("mode is all or known")
+    for key, top in LIMITS.items():
+        value = given.get(key, 0)
+        if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= top:
+            fail(f"{key} is a whole number from 0 to {top}")
+        out[key] = value
+    for key in ("blocked", "allowed"):
+        macs = given.get(key, [])
+        if not isinstance(macs, list) or len(macs) > 512 or \
+                not all(isinstance(m, str) and MAC.match(m) for m in macs):
+            fail(f"{key} is a list of MAC addresses like 0a:1b:2c:3d:4e:5f")
+        out[key] = sorted(set(macs))
+    return out
+
+
+def save_state(quota_mb, day=None):
+    STATE.write_text(json.dumps({"quota_mb": quota_mb, "day": day or datetime.date.today().isoformat()}))
+
+
+def load_state():
+    try:
+        return json.loads(STATE.read_text())
+    except (OSError, ValueError):
+        return {"quota_mb": 0, "day": datetime.date.today().isoformat()}
+
+
+def apply(cfg):
+    def elements(name, macs):
+        return f"add element inet {TABLE} {name} {{ {', '.join(macs)} }}\n" if macs else ""
+
+    rules = [f'iifname "{IFACE}" ether saddr @blocked drop']
+    if cfg["mode"] == "known":
+        rules.append(f'iifname "{IFACE}" ether saddr != @allowed drop')
+    rules += [f'oifname "{IFACE}" ip daddr @over drop', f'iifname "{IFACE}" ip saddr @over drop']
+    if cfg["rate_total"]:
+        kb = cfg["rate_total"] * 125  # Mbit/s → kbytes/s
+        burst = max(kb // 10, 64)
+        rules += [f'oifname "{IFACE}" limit rate over {kb} kbytes/second burst {burst} kbytes drop',
+                  f'iifname "{IFACE}" limit rate over {kb} kbytes/second burst {burst} kbytes drop']
+    if cfg["rate_device"]:
+        kb = cfg["rate_device"] * 125
+        burst = max(kb // 10, 64)
+        rules += [f'oifname "{IFACE}" update @down {{ ip daddr limit rate over {kb} kbytes/second '
+                  f'burst {burst} kbytes }} drop',
+                  f'iifname "{IFACE}" update @up {{ ip saddr limit rate over {kb} kbytes/second '
+                  f'burst {burst} kbytes }} drop']
+    rules += [f'oifname "{IFACE}" add @usage {{ ip daddr }}', f'iifname "{IFACE}" add @usage {{ ip saddr }}']
+    # declaring the table again keeps what exists, the counters among it
+    script = f"""table inet {TABLE} {{
+    set usage {{ type ipv4_addr; size 1024; flags dynamic; counter; }}
+    set over {{ type ipv4_addr; }}
+    set blocked {{ type ether_addr; }}
+    set allowed {{ type ether_addr; }}
+    set down {{ type ipv4_addr; size 1024; flags dynamic,timeout; timeout 10m; }}
+    set up {{ type ipv4_addr; size 1024; flags dynamic,timeout; timeout 10m; }}
+    chain input {{ type filter hook input priority filter - 1; policy accept; }}
+    chain forward {{ type filter hook forward priority filter - 1; policy accept; }}
+}}
+flush chain inet {TABLE} input
+flush chain inet {TABLE} forward
+flush set inet {TABLE} blocked
+flush set inet {TABLE} allowed
+flush set inet {TABLE} down
+flush set inet {TABLE} up
+flush set inet {TABLE} over
+"""
+    script += elements("blocked", cfg["blocked"]) + elements("allowed", cfg["allowed"])
+    script += f'add rule inet {TABLE} input iifname "{IFACE}" ether saddr @blocked drop\n'
+    script += "".join(f"add rule inet {TABLE} forward {r}\n" for r in rules)
+    first = not exists()
+    nft(script)
+    state = load_state()
+    save_state(cfg["quota_mb"], None if first else state.get("day"))
+    tick()
+
+
+def usage():
+    """{ip: bytes} since the hotspot started or the day began."""
+    if not exists():
+        return {}
+    res = subprocess.run(["nft", "-j", "list", "set", "inet", TABLE, "usage"], capture_output=True, text=True)
+    out = {}
+    try:
+        items = json.loads(res.stdout)["nftables"]
+    except (ValueError, KeyError):
+        return out
+    for item in items:
+        for elem in item.get("set", {}).get("elem", []):
+            e = elem.get("elem", {})
+            if isinstance(e, dict) and "val" in e:
+                out[e["val"]] = e.get("counter", {}).get("bytes", 0)
+    return out
+
+
+def over():
+    res = subprocess.run(["nft", "-j", "list", "set", "inet", TABLE, "over"], capture_output=True, text=True)
+    try:
+        items = json.loads(res.stdout)["nftables"]
+    except (ValueError, KeyError):
+        return []
+    return [e for item in items for e in item.get("set", {}).get("elem", []) if isinstance(e, str)]
+
+
+def reset():
+    nft(f"flush set inet {TABLE} usage\nflush set inet {TABLE} over\n")
+    save_state(load_state().get("quota_mb", 0))
+
+
+def tick():
+    if not exists():
+        return
+    state = load_state()
+    if state.get("day") != datetime.date.today().isoformat():
+        reset()
+        return
+    quota = state.get("quota_mb", 0) * 1024 * 1024
+    if not quota:
+        return
+    cut = [ip for ip, used in usage().items() if used >= quota and ip not in over()]
+    if cut:
+        nft(f"add element inet {TABLE} over {{ {', '.join(cut)} }}\n")
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else ""
+    if cmd == "apply" and len(argv) == 2:
+        apply(settings())
+    elif cmd == "status" and len(argv) == 2:
+        print(json.dumps({"usage": usage(), "over": over() if exists() else [],
+                          "quota_mb": load_state().get("quota_mb", 0)}))
+    elif cmd == "kick" and len(argv) == 3 and MAC.match(argv[2]):
+        subprocess.run(["iw", "dev", IFACE, "station", "del", argv[2]])
+    elif cmd == "tick" and len(argv) == 2:
+        tick()
+    elif cmd == "stop" and len(argv) == 2:
+        if exists():
+            nft(f"delete table inet {TABLE}\n")
+        STATE.unlink(missing_ok=True)
+    else:
+        print(__doc__, file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -22,7 +22,10 @@ def load():
 
 
 def save(state):
-    STATE.write_text(json.dumps(state, ensure_ascii=False, indent=1))
+    # whole or not at all: a test reading at the same moment never sees half a file
+    tmp = STATE.with_name(f"state.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(state, ensure_ascii=False, indent=1))
+    os.replace(tmp, STATE)
 
 
 def log():
@@ -259,7 +262,28 @@ def sudo(st):
     args = ARGS
     while args and args[0].startswith("-"):
         args = args[1:]
+    if args and args[0].endswith("/hotspot-guard"):
+        return hotspot_guard(st, args[1:])
     return subprocess.run(args).returncode if args else 0
+
+
+def hotspot_guard(st, args):
+    """The root helper of the hotspot: keeps what it was given in "guard"."""
+    g = st.setdefault("guard", {"applied": None, "usage": {}, "over": [], "kicked": []})
+    if args == ["apply"]:
+        g["applied"] = json.loads(sys.stdin.read())
+    elif args == ["status"]:
+        print(json.dumps({"usage": g["usage"], "over": g["over"],
+                          "quota_mb": (g["applied"] or {}).get("quota_mb", 0)}))
+    elif args[:1] == ["kick"]:
+        g["kicked"].append(args[1])
+    return 0
+
+
+def ip(st):
+    if "neigh" in ARGS:
+        print(json.dumps(st.get("neigh", [])))
+    return 0
 
 
 def notify_send(st):
@@ -501,7 +525,7 @@ HANDLERS = {
     "makoctl": makoctl, "wpctl": wpctl, "pw-dump": pw_dump, "busctl": busctl, "cliphist": cliphist,
     "niri": niri, "systemctl": systemctl, "brightnessctl": brightnessctl, "sudo": sudo,
     "playerctl": playerctl, "pgrep": pgrep, "notify-send": notify_send, "gtklock": gtklock, "pacman": pacman,
-    "nmcli": nmcli, "tailscale": tailscale, "rofi": rofi, "qrencode": qrencode,
+    "nmcli": nmcli, "tailscale": tailscale, "rofi": rofi, "qrencode": qrencode, "ip": ip,
 }
 
 
@@ -514,7 +538,8 @@ def main():
     rc = HANDLERS.get(NAME, passive)(st)
     # only calls that change something write, so a read running at the same
     # time as a background change cannot undo it
-    if NAME != "sudo" and json.dumps(st, sort_keys=True) != before:
+    guard_call = NAME == "sudo" and any(a.endswith("/hotspot-guard") for a in ARGS)
+    if (NAME != "sudo" or guard_call) and json.dumps(st, sort_keys=True) != before:
         save(st)
     return rc
 

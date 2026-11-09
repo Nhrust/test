@@ -47,6 +47,8 @@ WIFI_OFF, LOCK, ETHER, TAILNET = "\U000F092E", "\U000F033E", "\U000F0200", "\U00
 WIFI, WIRED = "802-11-wireless", "802-3-ethernet"
 HOTSPOT, HOTSPOT_IF, HOTSPOT_ICON = "zen-hotspot", "ap0", "\U000F0003"
 LEASES = Path(f"/var/lib/NetworkManager/dnsmasq-{HOTSPOT_IF}.leases")
+GUARD = "/usr/local/lib/zen/hotspot-guard"
+HOTSPOT_CONF = zen.STATE_HOME / "zen/hotspot.json"
 HIDDEN_PASSWORD = "•" * 8
 
 # (key, name, IPv4 servers, IPv6 servers, note); all of them answer DNS over TLS
@@ -346,22 +348,119 @@ def hotspot_on():
 
 
 def stations():
-    """Devices on the hotspot: [(name, address)]. Names come from the addresses
-    NetworkManager's dnsmasq handed out; the neighbour table says who is there."""
+    """Devices on the hotspot: [{mac, ip, name}]. The neighbour table says who is
+    there; names come from the addresses NetworkManager's dnsmasq handed out."""
     names = {}
     try:
         # dnsmasq: expiry, MAC address, IP address, host name or *, client id
         for f in (line.split() for line in LEASES.read_text().splitlines()):
             if len(f) >= 4 and f[3] != "*":
-                names[f[2]] = f[3]
+                names[f[1].lower()] = f[3]
     except OSError:
         pass
     try:
         neigh = json.loads(run("ip", "-j", "-4", "neigh", "show", "dev", HOTSPOT_IF).stdout or "[]")
     except ValueError:
         neigh = []
-    here = [n["dst"] for n in neigh if "FAILED" not in n.get("state", []) and n.get("dst")]
-    return [(names.get(ip, ip), ip) for ip in here]
+    out = []
+    for n in neigh:
+        mac = (n.get("lladdr") or "").lower()
+        if n.get("dst") and mac and "FAILED" not in n.get("state", []):
+            out.append({"mac": mac, "ip": n["dst"], "name": names.get(mac) or n["dst"]})
+    return out
+
+
+# ---------------------------------------------------------------- hotspot rules
+
+def hs_settings():
+    """Who may use the hotspot and how much: kept in ~/.local/state/zen/hotspot.json,
+    given to hotspot-guard each time the hotspot starts or a setting changes."""
+    cfg = {"mode": "all", "rate_total": 0, "rate_device": 0, "quota_mb": 0, "blocked": {}, "allowed": {}}
+    try:
+        saved_cfg = json.loads(HOTSPOT_CONF.read_text())
+        cfg.update({k: v for k, v in saved_cfg.items() if k in cfg and type(v) is type(cfg[k])})
+    except (OSError, ValueError):
+        pass
+    return cfg
+
+
+def hs_save(cfg):
+    HOTSPOT_CONF.parent.mkdir(parents=True, exist_ok=True)
+    tmp = HOTSPOT_CONF.with_suffix(".new")
+    tmp.write_text(json.dumps(cfg, ensure_ascii=False, indent=1))
+    os.replace(tmp, HOTSPOT_CONF)
+    if hotspot_on():
+        hs_apply(cfg)
+
+
+def guard(*args, data=None):
+    try:
+        return subprocess.run(["sudo", "-n", GUARD, *args], input=data, capture_output=True, text=True)
+    except FileNotFoundError:
+        return subprocess.CompletedProcess(args, 127, "", "sudo is missing")
+
+
+def hs_apply(cfg):
+    given = dict(cfg, blocked=sorted(cfg["blocked"]), allowed=sorted(cfg["allowed"]))
+    res = guard("apply", data=json.dumps(given))
+    if res.returncode != 0:
+        notify(False, _("The hotspot rules were not applied"), last_line(res))
+
+
+@functools.lru_cache(maxsize=None)
+def hs_status():
+    """{"usage": {ip: bytes}, "over": [ip], "quota_mb": n} while the hotspot is on."""
+    if not hotspot_on():
+        return {"usage": {}, "over": [], "quota_mb": 0}
+    try:
+        return json.loads(guard("status").stdout)
+    except ValueError:
+        return {"usage": {}, "over": [], "quota_mb": 0}
+
+
+def size(n):
+    if n >= 1024 ** 3:
+        return _("{} GB").format(f"{n / 1024 ** 3:.1f}".rstrip("0").rstrip("."))
+    return _("{} MB").format(round(n / 1024 ** 2))
+
+
+RATES = [0, 5, 10, 20, 50, 100]
+QUOTAS = [0, 500, 1024, 2048, 5120, 10240]
+
+
+def hs_label(what, value):
+    if what == "mode":
+        return _("everyone") if value == "all" else _("only your devices")
+    if not value:
+        return _("no limit")
+    if what == "quota_mb":
+        return size(value * 1024 * 1024)
+    return _("{} Mbit/s").format(value)
+
+
+def hs_step(what, delta):
+    cfg = hs_settings()
+    if what == "mode":
+        cfg["mode"] = "known" if cfg["mode"] == "all" else "all"
+    else:
+        values = QUOTAS if what == "quota_mb" else RATES
+        now = values.index(cfg[what]) if cfg[what] in values else 0
+        cfg[what] = values[(now + delta) % len(values)]
+    hs_save(cfg)
+
+
+def hs_mark(kind, mac, on):
+    """Put a device on the blocklist or among your own devices, or take it off."""
+    cfg = hs_settings()
+    name = next((d["name"] for d in stations() if d["mac"] == mac), cfg[kind].get(mac, mac))
+    if on:
+        cfg[kind][mac] = name
+    else:
+        cfg[kind].pop(mac, None)
+    hs_save(cfg)
+    if on and kind == "blocked":
+        # off the air now; it may come back, but finds no address and no internet
+        guard("kick", mac)
 
 
 def new_password():
@@ -429,6 +528,9 @@ def hotspot_start():
         time.sleep(0.2)
     res = run("nmcli", "connection", "up", "id", HOTSPOT)
     ok = res.returncode == 0
+    if ok:
+        clear_caches()
+        hs_apply(hs_settings())
     notify(ok, _("Hotspot on: {}").format(ssid_of(c["uuid"])) if ok else _("Could not start the hotspot"),
            "" if ok else last_line(res))
     if not ok:
@@ -951,20 +1053,88 @@ def show_hotspot(focus):
     if c is None:
         return show_main(None)
     on = hotspot_on()
+    cfg = hs_settings()
     state = _("switching…") if busy() == HOTSPOT else _("on") if on else _("off")
     menu.setting(_("Hotspot"), state, "adj:hotspot", active=on)
     menu.link(_("Name"), ssid_of(c["uuid"]), f"hsname:{c['uuid']}")
     menu.link(_("Password"), HIDDEN_PASSWORD, f"view:pw:{c['uuid']}")
+    menu.setting(_("Access"), hs_label("mode", cfg["mode"]), "adj:hs:mode")
+    menu.setting(_("Speed for all"), hs_label("rate_total", cfg["rate_total"]), "adj:hs:rate_total")
+    menu.setting(_("Speed per device"), hs_label("rate_device", cfg["rate_device"]), "adj:hs:rate_device")
+    menu.setting(_("Traffic per device"), hs_label("quota_mb", cfg["quota_mb"]), "adj:hs:quota_mb")
     if on:
-        found = stations()
-        for name, ip in found:
-            menu.add(esc(ip if name == ip else f"{name} · {ip}"), f"copy:{ip}")
-        if not found:
-            menu.add(esc(_("No devices yet")), "none", passive=True)
-    else:
+        menu.link(_("Devices"), str(len(stations())), "view:hsdevs")
+    if cfg["blocked"]:
+        menu.link(_("Blocklist"), str(len(cfg["blocked"])), "view:hsblocked")
+    if cfg["allowed"] or cfg["mode"] == "known":
+        menu.link(_("Your devices"), str(len(cfg["allowed"])), "view:hsallowed")
+    if not on:
         active = next((n for n in networks() if n["active"]), None)
         if active:
             menu.add(esc(_("Channel {} · as {}").format(active["chan"], active["ssid"])), "none", passive=True)
+    menu.print(focus)
+
+
+def device_state(d, cfg, status):
+    """What keeps a device from the internet, if anything."""
+    if d["mac"] in cfg["blocked"]:
+        return _("blocked")
+    if cfg["mode"] == "known" and d["mac"] not in cfg["allowed"]:
+        return _("no internet: not yours")
+    if d["ip"] in status.get("over", []):
+        return _("traffic used up")
+    return ""
+
+
+def show_hs_devices(focus):
+    menu = Menu("hsdevs")
+    menu.back("view:hotspot")
+    cfg, status = hs_settings(), hs_status()
+    for d in stations():
+        used = status.get("usage", {}).get(d["ip"], 0)
+        parts = [d["name"], size(used)] + [x for x in [device_state(d, cfg, status)] if x]
+        menu.link(" · ".join(parts), "", f"view:hsdev:{d['mac']}")
+    if len(menu.rows) == 1:
+        menu.add(esc(_("No devices yet")), "none", passive=True)
+    menu.print(focus)
+
+
+def show_hs_device(mac, focus):
+    d = next((x for x in stations() if x["mac"] == mac), None)
+    if d is None:
+        return show_hs_devices(None)
+    cfg, status = hs_settings(), hs_status()
+    menu = Menu(f"hsdev:{mac}")
+    menu.back("view:hsdevs")
+    menu.add(f"<b>{esc(d['name'])}</b>", "none")
+    menu.add(f"IPv4 · {esc(d['ip'])}", f"copy:{d['ip']}")
+    menu.add(f"MAC · {esc(mac)}", f"copy:{mac}")
+    used = size(status.get("usage", {}).get(d["ip"], 0))
+    if cfg["quota_mb"]:
+        used = _("{} of {}").format(used, size(cfg["quota_mb"] * 1024 * 1024))
+    state = device_state(d, cfg, status)
+    menu.add(esc(f'{_("Traffic")} · {used}' + (f" · {state}" if state else "")), "none")
+    mine = mac in cfg["allowed"]
+    menu.setting(_("Your device"), _("yes") if mine else _("no"), f"adj:hsown:{mac}", active=mine)
+    menu.add(esc(_("Disconnect now")), f"kick:{mac}")
+    if mac in cfg["blocked"]:
+        menu.add(esc(_("Take off the blocklist")), f"unblock:{mac}")
+    else:
+        menu.add(esc(_("Block")), f"block:{mac}")
+    menu.print(focus)
+
+
+def show_hs_list(kind, focus):
+    """The blocklist or your own devices; Enter takes a device off."""
+    menu = Menu("hsblocked" if kind == "blocked" else "hsallowed")
+    menu.back("view:hotspot")
+    cfg = hs_settings()
+    menu.add(esc(_("Enter takes a device off the list")), "none", passive=True)
+    for mac, name in sorted(cfg[kind].items(), key=lambda kv: kv[1].lower()):
+        menu.add(esc(f"{name} · {mac}" if name != mac else mac),
+                 f"{'unblock' if kind == 'blocked' else 'disown'}:{mac}")
+    if kind == "allowed" and not cfg[kind]:
+        menu.add(esc(_("Mark a device as yours in Devices")), "none", passive=True)
     menu.print(focus)
 
 
@@ -1031,6 +1201,12 @@ def show(view, focus=None):
         show_password(rest, kind == "pwshow", focus)
     elif kind == "hotspot" and on:
         show_hotspot(focus)
+    elif kind == "hsdevs" and hotspot_on():
+        show_hs_devices(focus)
+    elif kind == "hsdev" and hotspot_on():
+        show_hs_device(rest, focus)
+    elif kind in ("hsblocked", "hsallowed"):
+        show_hs_list("blocked" if kind == "hsblocked" else "allowed", focus)
     elif kind == "dns" and connection(rest):
         show_dns(rest, focus)
     elif kind in ("ip4", "ip6") and connection(rest):
@@ -1046,7 +1222,7 @@ def show(view, focus=None):
 
 
 def clear_caches():
-    for f in (devices, wifi_on, networks, connections, props, tailscale):
+    for f in (devices, wifi_on, networks, connections, props, tailscale, hs_status):
         f.cache_clear()
 
 
@@ -1079,6 +1255,10 @@ def act(info, view, delta=1):
             toggle_wifi()
         elif what == "ts":
             toggle_tailscale()
+        elif what == "hs":
+            hs_step(uuid, delta)
+        elif what == "hsown":
+            hs_mark("allowed", uuid, uuid not in hs_settings()["allowed"])
         elif what == "hotspot":
             if busy() != HOTSPOT:
                 BUSY.write_text(HOTSPOT)
@@ -1111,6 +1291,13 @@ def act(info, view, delta=1):
     if kind == "activate":
         spawn("activate", rest)
         return view, info
+    if kind in ("block", "unblock", "disown"):
+        hs_mark("allowed" if kind == "disown" else "blocked", rest, kind == "block")
+        return view, (f"unblock:{rest}" if kind == "block" else f"block:{rest}" if kind == "unblock" else None)
+    if kind == "kick":
+        guard("kick", rest)
+        notify(True, _("Disconnected: {}").format(next((d["name"] for d in stations() if d["mac"] == rest), rest)))
+        return "hsdevs", None
     if kind == "copy":
         copy(rest)
         notify(True, _("Copied: {}").format(rest))
@@ -1164,6 +1351,10 @@ def parent(view):
     if kind == "conn":
         c = connection(rest)
         return (f"dev:{c['device']}" if c and c["device"] else "saved"), f"view:{view}"
+    if kind in ("hsdevs", "hsblocked", "hsallowed"):
+        return "hotspot", f"view:{view}"
+    if kind == "hsdev":
+        return "hsdevs", f"view:{view}"
     if kind in ("pw", "pwshow") and (connection(rest) or {}).get("name") == HOTSPOT:
         return "hotspot", f"view:pw:{rest}"
     if kind in ("pw", "dns", "ip4", "ip6"):

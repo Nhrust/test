@@ -124,6 +124,10 @@ root ALL=(ALL:ALL) ALL
 ## Uncomment to allow members of group wheel to execute any command
 %wheel ALL=(ALL:ALL) ALL
 
+## The network menu changes the hotspot's rules (blocked devices, limits)
+## through this one program; it accepts nothing but those settings.
+%wheel ALL=(root) NOPASSWD: /usr/local/lib/zen/hotspot-guard
+
 ## Same thing without a password
 # %wheel ALL=(ALL:ALL) NOPASSWD: ALL
 

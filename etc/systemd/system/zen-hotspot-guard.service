@@ -1,0 +1,6 @@
+[Unit]
+Description=Zen hotspot: traffic quota and the daily count
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/zen/hotspot-guard tick

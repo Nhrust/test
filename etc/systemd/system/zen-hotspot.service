@@ -4,9 +4,13 @@ Documentation=https://wiki.archlinux.org/title/Software_access_point
 # The network menu starts it before NetworkManager runs the hotspot on ap0 and
 # stops it after; /etc/polkit-1/rules.d/50-zen-hotspot.rules lets it do that.
 After=NetworkManager.service
+# the quota check runs while the hotspot is on
+Wants=zen-hotspot-guard.timer
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/lib/zen/hotspot-iface add
 ExecStop=/usr/local/lib/zen/hotspot-iface del
+# the hotspot's rules (blocked devices, limits, counters) go with it
+ExecStopPost=/usr/local/lib/zen/hotspot-guard stop

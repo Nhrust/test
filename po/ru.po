@@ -817,3 +817,76 @@ msgstr "Канал {} · как у {}"
 
 msgid "switching…"
 msgstr "переключается…"
+
+# hotspot rules
+msgid "Access"
+msgstr "Доступ"
+
+msgid "Block"
+msgstr "В чёрный список"
+
+msgid "Blocklist"
+msgstr "Чёрный список"
+
+msgid "Disconnect now"
+msgstr "Отключить сейчас"
+
+msgid "Enter takes a device off the list"
+msgstr "Enter убирает устройство из списка"
+
+msgid "Mark a device as yours in Devices"
+msgstr "Отметь свои в «Устройствах»"
+
+msgid "Speed for all"
+msgstr "Скорость на всех"
+
+msgid "Speed per device"
+msgstr "Скорость на устройство"
+
+msgid "Take off the blocklist"
+msgstr "Убрать из чёрного списка"
+
+msgid "The hotspot rules were not applied"
+msgstr "Правила точки доступа не применились"
+
+msgid "Traffic per device"
+msgstr "Трафик на устройство"
+
+msgid "Traffic"
+msgstr "Трафик"
+
+msgid "Your device"
+msgstr "Своё"
+
+msgid "Your devices"
+msgstr "Свои устройства"
+
+msgid "blocked"
+msgstr "в чёрном списке"
+
+msgid "everyone"
+msgstr "всем"
+
+msgid "no internet: not yours"
+msgstr "без интернета: не своё"
+
+msgid "no limit"
+msgstr "без лимита"
+
+msgid "only your devices"
+msgstr "только своим"
+
+msgid "traffic used up"
+msgstr "трафик исчерпан"
+
+msgid "{} GB"
+msgstr "{} ГБ"
+
+msgid "{} MB"
+msgstr "{} МБ"
+
+msgid "{} Mbit/s"
+msgstr "{} Мбит/с"
+
+msgid "{} of {}"
+msgstr "{} из {}"

@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 MOCKED = ["makoctl", "wpctl", "pw-dump", "busctl", "cliphist", "wl-copy", "niri", "systemctl",
           "brightnessctl", "ddcutil", "kanshictl", "pkill", "pgrep", "notify-send", "sudo",
-          "nmcli", "gsettings", "setvtrgb", "rofi", "playerctl", "gtklock", "pacman", "tailscale", "qrencode"]
+          "nmcli", "gsettings", "setvtrgb", "rofi", "playerctl", "gtklock", "pacman", "tailscale", "qrencode", "ip"]
 
 INIT, SELECT, DELETE, ESC, LEFT, RIGHT, TAB = 0, 1, 3, 12, 13, 14, 15
 
@@ -114,7 +114,9 @@ class Zen(unittest.TestCase):
     # state of the stand-in programs
 
     def save(self):
-        (self.mock / "state.json").write_text(json.dumps(self.state))
+        tmp = self.mock / "state.test.tmp"
+        tmp.write_text(json.dumps(self.state))
+        os.replace(tmp, self.mock / "state.json")
 
     def load(self):
         self.state = json.loads((self.mock / "state.json").read_text())
@@ -475,6 +477,14 @@ class TestNetwork(Zen):
             time.sleep(0.1)
         return False
 
+    def idle(self):
+        """Wait for the background work of the menu to finish."""
+        for _x in range(100):
+            if not (self.run_dir / "zen-network-busy").exists():
+                return
+            time.sleep(0.1)
+        self.fail("the network menu stayed busy")
+
     def conn(self, uuid):
         return next(c for c in self.load()["nm"]["conns"] if c["uuid"] == uuid)
 
@@ -720,6 +730,7 @@ class TestNetwork(Zen):
         self.menu("zen-network", RIGHT, "adj:hotspot", "hotspot")
         self.assertTrue(self.wait_for(lambda st: next(c for c in st["nm"]["conns"]
                                                       if c["uuid"] == "u-zen-hotspot")["device"] == "ap0"))
+        self.idle()
         p = self.conn("u-zen-hotspot")["props"]
         self.assertEqual((p["802-11-wireless.band"], p["802-11-wireless.channel"]), ("a", "36"))
         self.assertIn("systemctl start zen-hotspot.service", self.calls("systemctl"))
@@ -738,6 +749,75 @@ class TestNetwork(Zen):
         self.menu("zen-network", LEFT, "adj:hotspot", "hotspot")
         self.assertTrue(self.wait_for(lambda st: ["ap0", "wifi"] not in st["nm"]["devices"]))
         self.assertEqual(self.conn("u-zen-hotspot")["device"], "")
+
+    def hotspot_on(self, neigh=()):
+        self.state["neigh"] = list(neigh)
+        self.save()
+        self.menu("zen-network", SELECT, "view:hotspot", "main")
+        self.menu("zen-network", SELECT, "adj:hotspot", "hotspot")
+        self.assertTrue(self.wait_for(lambda st: (st.get("guard") or {}).get("applied") is not None))
+        self.idle()
+
+    def guard(self):
+        return self.load()["guard"]
+
+    def test_hotspot_rules(self):
+        """The settings go to the root helper when the hotspot starts and when they change."""
+        phone = {"dst": "10.42.0.23", "lladdr": "0a:1b:2c:3d:4e:5f", "state": ["REACHABLE"]}
+        self.hotspot_on([phone])
+        self.assertEqual(self.guard()["applied"], {"mode": "all", "rate_total": 0, "rate_device": 0,
+                                                   "quota_mb": 0, "blocked": [], "allowed": []})
+        self.menu("zen-network", RIGHT, "adj:hs:rate_total", "hotspot")
+        self.menu("zen-network", RIGHT, "adj:hs:rate_device", "hotspot")
+        self.menu("zen-network", RIGHT, "adj:hs:rate_device", "hotspot")
+        self.menu("zen-network", LEFT, "adj:hs:quota_mb", "hotspot")
+        _o, rows = self.menu("zen-network", RIGHT, "adj:hs:mode", "hotspot")
+        g = self.guard()["applied"]
+        self.assertEqual((g["rate_total"], g["rate_device"], g["quota_mb"], g["mode"]), (5, 10, 10240, "known"))
+        texts = self.texts(rows)
+        self.assertIn("Access · ‹ only your devices ›", texts)
+        self.assertIn("Speed for all · ‹ 5 Mbit/s ›", texts)
+        self.assertIn("Traffic per device · ‹ 10 GB ›", texts)
+        self.assertIn("view:hsallowed", self.infos(rows))
+        saved_cfg = json.loads((self.home / ".local/state/zen/hotspot.json").read_text())
+        self.assertEqual(saved_cfg["rate_device"], 10)
+
+    def test_hotspot_devices(self):
+        phone = {"dst": "10.42.0.23", "lladdr": "0a:1b:2c:3d:4e:5f", "state": ["REACHABLE"]}
+        self.hotspot_on([phone])
+        self.state = self.load()
+        self.state["guard"]["usage"] = {"10.42.0.23": 157286400}
+        self.save()
+        _o, rows = self.menu("zen-network", SELECT, "view:hsdevs", "hotspot")
+        self.assertEqual(self.texts(rows)[1], "10.42.0.23 · 150 MB  ›")
+        _o, rows = self.menu("zen-network", SELECT, "view:hsdev:0a:1b:2c:3d:4e:5f", "hsdevs")
+        self.assertIn("copy:0a:1b:2c:3d:4e:5f", self.infos(rows))
+        # the blocklist: kept, given to the helper, and the device is sent off the air
+        _o, rows = self.menu("zen-network", SELECT, "block:0a:1b:2c:3d:4e:5f", "hsdev:0a:1b:2c:3d:4e:5f")
+        self.assertEqual(self.guard()["applied"]["blocked"], ["0a:1b:2c:3d:4e:5f"])
+        self.assertEqual(self.guard()["kicked"], ["0a:1b:2c:3d:4e:5f"])
+        self.assertIn("unblock:0a:1b:2c:3d:4e:5f", self.infos(rows))
+        _o, rows = self.menu("zen-network", SELECT, "view:hsdevs", "hotspot")
+        self.assertTrue(self.texts(rows)[1].endswith("blocked  ›"))
+        _o, rows = self.menu("zen-network", SELECT, "view:hsblocked", "hotspot")
+        self.assertEqual(self.infos(rows)[2], "unblock:0a:1b:2c:3d:4e:5f")
+        self.menu("zen-network", SELECT, "unblock:0a:1b:2c:3d:4e:5f", "hsblocked")
+        self.assertEqual(self.guard()["applied"]["blocked"], [])
+        # your own device, for the "only your devices" access
+        self.menu("zen-network", RIGHT, "adj:hsown:0a:1b:2c:3d:4e:5f", "hsdev:0a:1b:2c:3d:4e:5f")
+        self.assertEqual(self.guard()["applied"]["allowed"], ["0a:1b:2c:3d:4e:5f"])
+        options, _rows = self.menu("zen-network", ESC, "", "hsdev:0a:1b:2c:3d:4e:5f")
+        self.assertEqual(options["data"], "hsdevs")
+        self.menu("zen-network", SELECT, "kick:0a:1b:2c:3d:4e:5f", "hsdev:0a:1b:2c:3d:4e:5f")
+        self.assertEqual(self.guard()["kicked"], ["0a:1b:2c:3d:4e:5f"] * 2)
+
+    def test_hotspot_settings_while_off(self):
+        """Changes while the hotspot is off are only saved; the helper gets them at the start."""
+        self.menu("zen-network", SELECT, "view:hotspot", "main")
+        self.menu("zen-network", RIGHT, "adj:hs:quota_mb", "hotspot")
+        self.assertNotIn("guard", self.load())
+        self.hotspot_on()
+        self.assertEqual(self.guard()["applied"]["quota_mb"], 500)
 
     def test_hotspot_radar_channel(self):
         self.state["nm"]["aps"][0]["chan"] = 100
