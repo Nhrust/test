@@ -15,6 +15,9 @@ wl-mirror
 wl-clipboard
 cliphist
 qrencode
+iw
+dnsmasq
+wireless-regdb
 brightnessctl
 playerctl
 power-profiles-daemon

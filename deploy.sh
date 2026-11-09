@@ -72,6 +72,14 @@ place() {
 			echo 1 > "$REBUILD" ;;
 		/etc/locale.gen)
 			echo 1 > "$LOCALES" ;;
+		/etc/nftables.conf)
+			# a firewall with a mistake would not load at all: check it first
+			if ! sudo nft -c -f "$src"; then
+				say "! $dst: nft -c failed, skipped"; return 0
+			fi
+			echo nftables >> "$RELOAD" ;;
+		/etc/NetworkManager/*)
+			echo NetworkManager >> "$RELOAD" ;;
 		"$HOME/.config/waybar/"*)
 			echo waybar >> "$RELOAD" ;;
 		"$HOME/.config/mako/"*)
@@ -215,6 +223,8 @@ fi
 # running programs pick up their new configs
 ! grep -qx waybar "$RELOAD" || run pkill -USR2 -x waybar || true
 ! grep -qx mako "$RELOAD" || run makoctl reload || true
+! grep -qx nftables "$RELOAD" || run sudo systemctl reload nftables.service || true
+! grep -qx NetworkManager "$RELOAD" || run sudo systemctl reload NetworkManager.service || true
 [ ! -s "$SSHD" ] || run sudo systemctl try-reload-or-restart sshd.service
 run "$HOME/.local/bin/zen" gtklock || say "! gtklock module not built; run: zen gtklock"
 

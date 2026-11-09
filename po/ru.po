@@ -591,9 +591,6 @@ msgstr "Нет сетевых устройств"
 msgid "saved"
 msgstr "сохранена"
 
-msgid "no cable"
-msgstr "нет кабеля"
-
 msgid "Connect"
 msgstr "Подключить"
 
@@ -783,3 +780,40 @@ msgstr "блокирует опасные сайты"
 
 msgid "blocks ads"
 msgstr "без рекламы"
+
+# hotspot
+msgid "Hotspot"
+msgstr "Точка доступа"
+
+msgid "Hotspot on: {}"
+msgstr "Точка доступа включена: {}"
+
+msgid "Hotspot off"
+msgstr "Точка доступа выключена"
+
+msgid "Could not create the hotspot"
+msgstr "Не удалось создать точку доступа"
+
+msgid "Could not start the hotspot"
+msgstr "Не удалось включить точку доступа"
+
+msgid "The hotspot cannot start on channel {}"
+msgstr "Точка доступа не может работать на канале {}"
+
+msgid "Wi-Fi is connected on a radar channel; only a router may start a network there"
+msgstr "Wi-Fi подключён на канале с радарами; создавать там сеть может только роутер"
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "Name of the hotspot"
+msgstr "Имя точки доступа"
+
+msgid "No devices yet"
+msgstr "Пока никто не подключился"
+
+msgid "Channel {} · as {}"
+msgstr "Канал {} · как у {}"
+
+msgid "switching…"
+msgstr "переключается…"

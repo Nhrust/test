@@ -23,7 +23,7 @@ MOCKED = ["makoctl", "wpctl", "pw-dump", "busctl", "cliphist", "wl-copy", "niri"
           "brightnessctl", "ddcutil", "kanshictl", "pkill", "pgrep", "notify-send", "sudo",
           "nmcli", "gsettings", "setvtrgb", "rofi", "playerctl", "gtklock", "pacman", "tailscale", "qrencode"]
 
-SELECT, DELETE, ESC, LEFT, RIGHT, TAB = 1, 3, 12, 13, 14, 15
+INIT, SELECT, DELETE, ESC, LEFT, RIGHT, TAB = 0, 1, 3, 12, 13, 14, 15
 
 
 def base_state():
@@ -495,6 +495,7 @@ class TestNetwork(Zen):
         self.assertTrue(any(t.startswith("Exit node · none") for t in texts))
         self.assertIn("5 GHz · 82%", options["message"])
         self.assertIn("1 device online", options["message"])
+        self.assertNotIn("Ethernet", options["message"], "no cable: the row says it")
         self.assertNotIn("100.64", "".join(texts) + options["message"])
 
     def test_networks(self):
@@ -701,6 +702,66 @@ class TestNetwork(Zen):
         res = self.run_cmd(self.home / ".local/bin/zen-network", "list",
                            env={"ROFI_RETV": "0", "ZEN_MENU_VIEW": "dns:u-home"})
         self.assertIn("\0data\x1fdns:u-home", res.stdout)
+
+    def test_hotspot(self):
+        _o, rows = self.menu("zen-network")
+        self.assertIn("view:hotspot", self.infos(rows))
+        # the first visit saves the hotspot with the computer's name and a new password
+        _o, rows = self.menu("zen-network", SELECT, "view:hotspot", "main")
+        hs = self.conn("u-zen-hotspot")
+        self.assertEqual(hs["ifname"], "ap0")
+        self.assertEqual(hs["props"]["802-11-wireless.mode"], "ap")
+        self.assertEqual(hs["props"]["ipv4.method"], "shared")
+        self.assertRegex(hs["psk"], r"^[a-z2-9]{4}-[a-z2-9]{4}-[a-z2-9]{4}$")
+        self.assertFalse(any(hs["psk"] in c for c in self.calls()))
+        self.assertEqual(self.texts(rows)[1], "Hotspot · ‹ off ›")
+        self.assertIn("view:pw:u-zen-hotspot", self.infos(rows))
+        # on: the interface, then the hotspot on the channel Wi-Fi uses
+        self.menu("zen-network", RIGHT, "adj:hotspot", "hotspot")
+        self.assertTrue(self.wait_for(lambda st: next(c for c in st["nm"]["conns"]
+                                                      if c["uuid"] == "u-zen-hotspot")["device"] == "ap0"))
+        p = self.conn("u-zen-hotspot")["props"]
+        self.assertEqual((p["802-11-wireless.band"], p["802-11-wireless.channel"]), ("a", "36"))
+        self.assertIn("systemctl start zen-hotspot.service", self.calls("systemctl"))
+        options, rows = self.menu("zen-network", INIT, "", "hotspot")
+        self.assertEqual(self.texts(rows)[1], "Hotspot · ‹ on ›")
+        self.assertIn("\U000F0003", options["message"])
+        # ap0 is not a second Wi-Fi of this computer
+        _o, rows = self.menu("zen-network")
+        self.assertEqual(self.texts(rows)[0], "Wi-Fi · ‹ on ›")
+        self.assertNotIn("view:dev:ap0", self.infos(rows))
+        _o, rows = self.menu("zen-network", SELECT, "view:saved", "main")
+        self.assertNotIn("view:conn:u-zen-hotspot", self.infos(rows))
+        # its password view goes back to the hotspot
+        options, _rows = self.menu("zen-network", ESC, "", "pw:u-zen-hotspot")
+        self.assertEqual(options["data"], "hotspot")
+        self.menu("zen-network", LEFT, "adj:hotspot", "hotspot")
+        self.assertTrue(self.wait_for(lambda st: ["ap0", "wifi"] not in st["nm"]["devices"]))
+        self.assertEqual(self.conn("u-zen-hotspot")["device"], "")
+
+    def test_hotspot_radar_channel(self):
+        self.state["nm"]["aps"][0]["chan"] = 100
+        self.state["nm"]["aps"][0]["freq"] = "5500 MHz"
+        self.save()
+        self.menu("zen-network", SELECT, "view:hotspot", "main")
+        self.menu("zen-network", SELECT, "adj:hotspot", "hotspot")
+        for _x in range(50):
+            if any("cannot start on channel 100" in c for c in self.calls("notify-send")):
+                break
+            time.sleep(0.1)
+        self.assertTrue(any("cannot start on channel 100" in c for c in self.calls("notify-send")))
+        self.assertNotIn("systemctl start zen-hotspot.service", self.calls("systemctl"))
+
+    def test_hotspot_refused(self):
+        self.state["systemd"]["deny"] = ["zen-hotspot.service"]
+        self.save()
+        self.menu("zen-network", SELECT, "view:hotspot", "main")
+        self.menu("zen-network", SELECT, "adj:hotspot", "hotspot")
+        for _x in range(50):
+            if any("Could not start the hotspot" in c for c in self.calls("notify-send")):
+                break
+            time.sleep(0.1)
+        self.assertTrue(any("Access denied" in c for c in self.calls("notify-send")))
 
     def test_devices(self):
         """The list shows names and state; the address appears only inside a device."""

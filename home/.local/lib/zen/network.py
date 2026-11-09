@@ -9,6 +9,11 @@ saved network keeps its own settings: automatic connection, metered, MAC
 address, password, DNS, DNS over TLS, IPv4 and IPv6. A change applies at once
 to a connected network, without dropping it (the MAC address reconnects).
 
+The hotspot shares the connection over Wi-Fi while Wi-Fi stays connected: it
+runs on ap0, a second interface on the same card that zen-hotspot.service makes
+(the card serves both on one channel, so the hotspot takes the channel of the
+network). Its name and password are those of the saved connection zen-hotspot.
+
 What has to be typed (a password, a DNS server, an address) is asked in a
 separate prompt; the menu closes for it and opens again where it was. A
 password goes to nmcli and qrencode on their standard input, never on a
@@ -20,8 +25,11 @@ import ipaddress
 import json
 import os
 import re
+import secrets
+import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import zen
@@ -37,6 +45,8 @@ INIT, SELECT, ESC, LEFT, RIGHT = 0, 1, 12, 13, 14
 SIGNAL = ["\U000F091F", "\U000F0922", "\U000F0925", "\U000F0928"]
 WIFI_OFF, LOCK, ETHER, TAILNET = "\U000F092E", "\U000F033E", "\U000F0200", "\U000F0582"
 WIFI, WIRED = "802-11-wireless", "802-3-ethernet"
+HOTSPOT, HOTSPOT_IF, HOTSPOT_ICON = "zen-hotspot", "ap0", "\U000F0003"
+LEASES = Path(f"/var/lib/NetworkManager/dnsmasq-{HOTSPOT_IF}.leases")
 HIDDEN_PASSWORD = "•" * 8
 
 # (key, name, IPv4 servers, IPv6 servers, note); all of them answer DNS over TLS
@@ -91,10 +101,11 @@ def nmcli(*args):
 
 @functools.lru_cache(maxsize=None)
 def devices():
-    """[(device, type, state, connection, connection uuid)] for Wi-Fi and Ethernet."""
+    """[(device, type, state, connection, connection uuid)] for Wi-Fi and Ethernet;
+    the hotspot's interface is not one of them."""
     out = []
     for f in nmcli("--fields", "DEVICE,TYPE,STATE,CONNECTION,CON-UUID", "device"):
-        if len(f) >= 4 and f[1] in ("wifi", "ethernet"):
+        if len(f) >= 4 and f[1] in ("wifi", "ethernet") and f[0] != HOTSPOT_IF:
             out.append(tuple((f + [""])[:5]))
     return out
 
@@ -113,8 +124,9 @@ def networks():
     """Visible networks, strongest first, one row per name:
     {ssid, signal, secure, active, freq, chan, security}."""
     seen = {}
+    wifi = device("wifi")
     for f in nmcli("--fields", "IN-USE,SSID,SIGNAL,SECURITY,FREQ,CHAN", "device", "wifi", "list",
-                   "--rescan", "no"):
+                   "--rescan", "no", *(["ifname", wifi[0]] if wifi else [])):
         if len(f) < 6 or not f[1]:
             continue
         net = {"active": f[0] == "*", "ssid": f[1], "signal": int(f[2] or 0),
@@ -140,7 +152,7 @@ def connection(uuid):
 
 def saved():
     """Names of saved Wi-Fi connections."""
-    return {c["name"] for c in connections() if c["type"] == WIFI}
+    return {c["name"] for c in connections() if c["type"] == WIFI and c["name"] != HOTSPOT}
 
 
 @functools.lru_cache(maxsize=None)
@@ -322,6 +334,121 @@ def step(what, uuid, delta):
     return None
 
 
+# ---------------------------------------------------------------- hotspot
+
+def hotspot():
+    return next((c for c in connections() if c["name"] == HOTSPOT), None)
+
+
+def hotspot_on():
+    c = hotspot()
+    return bool(c and c["device"])
+
+
+def stations():
+    """Devices on the hotspot: [(name, address)]. Names come from the addresses
+    NetworkManager's dnsmasq handed out; the neighbour table says who is there."""
+    names = {}
+    try:
+        # dnsmasq: expiry, MAC address, IP address, host name or *, client id
+        for f in (line.split() for line in LEASES.read_text().splitlines()):
+            if len(f) >= 4 and f[3] != "*":
+                names[f[2]] = f[3]
+    except OSError:
+        pass
+    try:
+        neigh = json.loads(run("ip", "-j", "-4", "neigh", "show", "dev", HOTSPOT_IF).stdout or "[]")
+    except ValueError:
+        neigh = []
+    here = [n["dst"] for n in neigh if "FAILED" not in n.get("state", []) and n.get("dst")]
+    return [(names.get(ip, ip), ip) for ip in here]
+
+
+def new_password():
+    """Twelve letters and digits that are easy to type on a phone: xxxx-xxxx-xxxx."""
+    chars = "abcdefghjkmnpqrstuvwxyz23456789"
+    return "-".join("".join(secrets.choice(chars) for _i in range(4)) for _g in range(3))
+
+
+def set_password(uuid, password):
+    """The editor reads the password from its standard input; the extra "yes"
+    answers its question about saving a network that connects by itself."""
+    script = f"set 802-11-wireless-security.key-mgmt wpa-psk\nset 802-11-wireless-security.psk {password}\n" \
+             "save persistent\nyes\nquit\n"
+    subprocess.run(["nmcli", "connection", "edit", "uuid", uuid], input=script,
+                   capture_output=True, text=True)
+    clear_caches()
+    return secret(uuid) == password
+
+
+def ensure_hotspot():
+    """The saved hotspot: the computer's name and a new password the first time."""
+    if hotspot() is None:
+        res = run("nmcli", "connection", "add", "type", "wifi", "ifname", HOTSPOT_IF, "con-name", HOTSPOT,
+                  "autoconnect", "no", "ssid", socket.gethostname(), "802-11-wireless.mode", "ap",
+                  "ipv4.method", "shared", "ipv6.method", "ignore")
+        clear_caches()
+        if res.returncode != 0:
+            notify(False, _("Could not create the hotspot"), last_line(res))
+            return None
+        set_password(hotspot()["uuid"], new_password())
+    return hotspot()
+
+
+def interface_ready():
+    for f in nmcli("--fields", "DEVICE,TYPE,STATE,CONNECTION,CON-UUID", "device"):
+        if f[0] == HOTSPOT_IF and len(f) > 2 and f[2] not in ("unavailable", "unmanaged"):
+            return True
+    return False
+
+
+def hotspot_start():
+    c = ensure_hotspot()
+    if c is None:
+        return
+    # one card, one channel: the hotspot takes the channel Wi-Fi is connected on
+    active = next((n for n in networks() if n["active"]), None)
+    if active:
+        chan = int(active["chan"] or 0)
+        if 52 <= chan <= 144:
+            notify(False, _("The hotspot cannot start on channel {}").format(chan),
+                   _("Wi-Fi is connected on a radar channel; only a router may start a network there"))
+            return
+        kind = "a" if band(active["freq"]).startswith("5") else "bg"
+        modify(c["uuid"], "802-11-wireless.band", kind, "802-11-wireless.channel", str(chan))
+    else:
+        modify(c["uuid"], "802-11-wireless.band", "bg", "802-11-wireless.channel", "0")
+    res = run("systemctl", "start", f"{HOTSPOT}.service")
+    if res.returncode != 0:
+        notify(False, _("Could not start the hotspot"), last_line(res))
+        return
+    # NetworkManager takes the new interface a moment after it appears
+    for _i in range(50):
+        if interface_ready():
+            break
+        time.sleep(0.2)
+    res = run("nmcli", "connection", "up", "id", HOTSPOT)
+    ok = res.returncode == 0
+    notify(ok, _("Hotspot on: {}").format(ssid_of(c["uuid"])) if ok else _("Could not start the hotspot"),
+           "" if ok else last_line(res))
+    if not ok:
+        run("systemctl", "stop", f"{HOTSPOT}.service")
+
+
+def hotspot_stop():
+    run("nmcli", "connection", "down", "id", HOTSPOT)
+    run("systemctl", "stop", f"{HOTSPOT}.service")
+    notify(True, _("Hotspot off"))
+
+
+def rename_hotspot(uuid):
+    name = ask(_("Name"), _("Name of the hotspot"), value=ssid_of(uuid))
+    if not name or name == ssid_of(uuid):
+        return
+    if modify(uuid, "802-11-wireless.ssid", name) and hotspot_on():
+        run("nmcli", "connection", "up", "uuid", uuid)
+
+
 # ---------------------------------------------------------------- Tailscale
 
 @functools.lru_cache(maxsize=None)
@@ -440,13 +567,7 @@ def change_password(uuid):
     password = ask(_("Password"), _("New password for {}").format(name), password=True)
     if not password:
         return
-    # the editor reads the password from its standard input; the extra "yes"
-    # answers its question about saving a network that connects by itself
-    script = f"set 802-11-wireless-security.psk {password}\nsave persistent\nyes\nquit\n"
-    subprocess.run(["nmcli", "connection", "edit", "uuid", uuid], input=script,
-                   capture_output=True, text=True)
-    clear_caches()
-    ok = secret(uuid) == password
+    ok = set_password(uuid, password)
     notify(ok, _("Password changed: {}").format(name) if ok else _("Could not change the password"))
     if ok and (connection(uuid) or {}).get("device"):
         run("nmcli", "connection", "up", "uuid", uuid)
@@ -545,6 +666,12 @@ def worker(action, target):
         elif action == "dns":
             custom_dns(target)
             back = f"dns:{target}"
+        elif action == "hotspot":
+            BUSY.write_text(HOTSPOT)
+            (hotspot_start if target == "on" else hotspot_stop)()
+        elif action == "hsname":
+            rename_hotspot(target)
+            back = "hotspot"
         elif action in ("ip4addr", "ip4gw"):
             fixed_address(target, "address" if action == "ip4addr" else "gateway")
             back = f"ip4:{target}"
@@ -581,10 +708,13 @@ def header():
                          + tint(f'{band(active["freq"])} · {active["signal"]}%', "muted"))
         else:
             lines.append(f'{tint(SIGNAL[0], "line")}  {tint(esc(_("not connected")), "muted")}')
+    if lines and hotspot_on():
+        # the hotspot shares the Wi-Fi line: its icon and how many devices use it
+        lines[-1] += f'   {tint(HOTSPOT_ICON, "accent")} {len(stations())}'
     eth = device("ethernet")
-    if eth:
-        state = _("connected") if eth[2] == "connected" else _("no cable") if eth[2] == "unavailable" \
-            else _("not connected")
+    # without a cable the line would say only that; the menu row still does
+    if eth and eth[2] != "unavailable":
+        state = _("connected") if eth[2] == "connected" else _("not connected")
         lines.append(f'{ETHER}  {tint(esc("Ethernet · " + state), "muted" if eth[2] != "connected" else "fg")}')
     ts = tailscale()
     if ts is not None:
@@ -654,8 +784,10 @@ def show_main(focus):
             if active:
                 menu.add(f'{esc(active["ssid"])} · {esc(_("connected"))}  ›', f"view:dev:{wifi[0]}")
             menu.link(_("Networks"), "", "view:wifi")
-        if any(c["type"] == WIFI for c in connections()):
+        if saved():
             menu.link(_("Saved networks"), "", "view:saved")
+        if on:
+            menu.link(_("Hotspot"), _("on") if hotspot_on() else "", "view:hotspot")
     eth = device("ethernet")
     if eth:
         state = _("connected") if eth[2] == "connected" else _("not connected")
@@ -708,7 +840,7 @@ def show_saved(focus):
     menu = Menu("saved")
     menu.back()
     near = {n["ssid"] for n in networks()}
-    items = [c for c in connections() if c["type"] == WIFI]
+    items = [c for c in connections() if c["type"] == WIFI and c["name"] != HOTSPOT]
     items.sort(key=lambda c: (not c["device"], c["name"] not in near, c["name"].lower()))
     for c in items:
         state = _("connected") if c["device"] else _("in range") if c["name"] in near else ""
@@ -769,7 +901,7 @@ def show_conn(uuid, focus):
 
 def show_password(uuid, shown, focus):
     menu = Menu(f"{'pwshow' if shown else 'pw'}:{uuid}")
-    menu.back(f"view:conn:{uuid}")
+    menu.back(f"view:{parent(menu.view)[0]}")
     value = secret(uuid) if shown else None
     if shown and value is None:
         notify(False, _("NetworkManager did not give the password"))
@@ -809,6 +941,30 @@ def show_ip(uuid, family, focus):
         for name, value in details(dev):
             if name == prefix or (family == "ip4" and name == _("Gateway")):
                 menu.add(f'{esc(_("Now"))} · {esc(name)} · {esc(value)}', f"copy:{value.split('/')[0]}")
+    menu.print(focus)
+
+
+def show_hotspot(focus):
+    menu = Menu("hotspot")
+    menu.back()
+    c = ensure_hotspot()
+    if c is None:
+        return show_main(None)
+    on = hotspot_on()
+    state = _("switching…") if busy() == HOTSPOT else _("on") if on else _("off")
+    menu.setting(_("Hotspot"), state, "adj:hotspot", active=on)
+    menu.link(_("Name"), ssid_of(c["uuid"]), f"hsname:{c['uuid']}")
+    menu.link(_("Password"), HIDDEN_PASSWORD, f"view:pw:{c['uuid']}")
+    if on:
+        found = stations()
+        for name, ip in found:
+            menu.add(esc(ip if name == ip else f"{name} · {ip}"), f"copy:{ip}")
+        if not found:
+            menu.add(esc(_("No devices yet")), "none", passive=True)
+    else:
+        active = next((n for n in networks() if n["active"]), None)
+        if active:
+            menu.add(esc(_("Channel {} · as {}").format(active["chan"], active["ssid"])), "none", passive=True)
     menu.print(focus)
 
 
@@ -873,6 +1029,8 @@ def show(view, focus=None):
         show_conn(rest, focus)
     elif kind in ("pw", "pwshow") and connection(rest):
         show_password(rest, kind == "pwshow", focus)
+    elif kind == "hotspot" and on:
+        show_hotspot(focus)
     elif kind == "dns" and connection(rest):
         show_dns(rest, focus)
     elif kind in ("ip4", "ip6") and connection(rest):
@@ -921,6 +1079,10 @@ def act(info, view, delta=1):
             toggle_wifi()
         elif what == "ts":
             toggle_tailscale()
+        elif what == "hotspot":
+            if busy() != HOTSPOT:
+                BUSY.write_text(HOTSPOT)
+                spawn("hotspot", "off" if hotspot_on() else "on")
         elif step(what, uuid, delta) == "prompt":
             spawn("ip4addr", uuid)
             return None, None
@@ -963,7 +1125,7 @@ def act(info, view, delta=1):
         return view, info
     if kind == "reveal":
         return ("pw:" if view.startswith("pwshow:") else "pwshow:") + rest, info
-    if kind in ("qr", "psk", "ip4addr", "ip4gw"):
+    if kind in ("qr", "psk", "ip4addr", "ip4gw", "hsname"):
         spawn(kind, rest)
         return None, None
     if kind == "dns":
@@ -1002,6 +1164,8 @@ def parent(view):
     if kind == "conn":
         c = connection(rest)
         return (f"dev:{c['device']}" if c and c["device"] else "saved"), f"view:{view}"
+    if kind in ("pw", "pwshow") and (connection(rest) or {}).get("name") == HOTSPOT:
+        return "hotspot", f"view:pw:{rest}"
     if kind in ("pw", "dns", "ip4", "ip6"):
         return f"conn:{rest}", f"view:{view}"
     if kind == "pwshow":

@@ -1,0 +1,23 @@
+#!/bin/sh
+# hotspot-iface add|del — the virtual interface ap0 on the Wi-Fi card, so the
+# card can serve a hotspot while it stays connected to a network (the card has
+# to support it: "iw list" shows #{ AP } <= 1 among its interface combinations;
+# both work on one channel). Run by zen-hotspot.service.
+set -eu
+AP=ap0
+case ${1:-} in
+	add)
+		[ ! -e "/sys/class/net/$AP" ] || exit 0
+		for p in /sys/class/net/*/phy80211; do
+			[ -e "$p" ] || continue
+			exec iw phy "$(cat "$p/name")" interface add "$AP" type __ap
+		done
+		echo "no Wi-Fi card" >&2
+		exit 1 ;;
+	del)
+		[ -e "/sys/class/net/$AP" ] || exit 0
+		exec iw dev "$AP" del ;;
+	*)
+		sed -n '2,5p' "$0"
+		exit 2 ;;
+esac

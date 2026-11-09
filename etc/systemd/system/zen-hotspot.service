@@ -1,0 +1,12 @@
+[Unit]
+Description=Zen hotspot interface (ap0 next to the Wi-Fi card)
+Documentation=https://wiki.archlinux.org/title/Software_access_point
+# The network menu starts it before NetworkManager runs the hotspot on ap0 and
+# stops it after; /etc/polkit-1/rules.d/50-zen-hotspot.rules lets it do that.
+After=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/lib/zen/hotspot-iface add
+ExecStop=/usr/local/lib/zen/hotspot-iface del

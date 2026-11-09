@@ -186,6 +186,17 @@ def systemctl(st):
     if a[0] == "is-active":
         print("active" if a[1] in active else "inactive")
         return 0 if a[1] in active else 3
+    if a[1:2] == ["zen-hotspot.service"] and a[0] in ("start", "stop"):
+        if a[1] in st["systemd"].get("deny", []):
+            print("Failed to start zen-hotspot.service: Access denied", file=sys.stderr)
+            return 1
+        devs = st["nm"]["devices"]
+        devs[:] = [d for d in devs if d[0] != "ap0"] + ([["ap0", "wifi"]] if a[0] == "start" else [])
+        if a[0] == "stop":
+            for c in st["nm"]["conns"]:
+                if c["device"] == "ap0":
+                    c["device"] = ""
+        return 0
     if a[0] == "start":
         if a[1] == "zen-caffeine.service":
             active[:] = [u for u in active if u != "zen-idle.service"] + [a[1]]
@@ -291,13 +302,18 @@ def nmcli(st):
         return next((d[0] for d in nm["devices"] if d[1] == kind), None)
 
     def activate(c):
+        dev = c.get("ifname") or dev_of("wifi" if c["type"] == WIFI else "ethernet")
+        if c.get("ifname") and dev not in [d[0] for d in nm["devices"]]:
+            print(f"Error: Connection activation failed: device {dev} not available", file=sys.stderr)
+            return 4
         for o in conns:
-            if o["type"] == c["type"]:
+            if o["device"] == dev:
                 o["device"] = ""
-        c["device"] = dev_of("wifi" if c["type"] == WIFI else "ethernet")
+        c["device"] = dev
+        return 0
 
     def active_ssid():
-        c = next((c for c in conns if c["type"] == WIFI and c["device"]), None)
+        c = next((c for c in conns if c["type"] == WIFI and c["device"] and not c.get("ifname")), None)
         return c["props"]["802-11-wireless.ssid"] if c else None
 
     if a == ["device"]:
@@ -364,7 +380,21 @@ def nmcli(st):
         c = find(a[2], a[3])
         if c is None:
             return 10
-        activate(c)
+        return activate(c)
+    elif a[:2] == ["connection", "down"]:
+        c = find(a[2], a[3])
+        if c:
+            c["device"] = ""
+    elif a[:3] == ["connection", "add", "type"]:
+        opts = dict(zip(a[4::2], a[5::2]))
+        c = new_conn(f"u-{opts['con-name']}", opts["con-name"], WIFI, secure=False)
+        c["ifname"] = opts.get("ifname", "")
+        c["props"]["802-11-wireless.ssid"] = opts.get("ssid", "")
+        for key in ("802-11-wireless.mode", "ipv4.method", "ipv6.method"):
+            if key in opts:
+                c["props"][key] = opts[key]
+        c["props"]["connection.autoconnect"] = opts.get("autoconnect", "yes")
+        conns.append(c)
     elif a[:2] == ["connection", "delete"]:
         nm["conns"] = [c for c in conns if c["uuid" if a[2] == "uuid" else "name"] != a[3]]
     elif a[:2] == ["device", "reapply"]:
