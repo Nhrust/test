@@ -172,13 +172,14 @@ binds {
     
     Ctrl+Shift+Escape { spawn "foot" "btop"; }
     Mod+P { spawn-sh "~/.local/bin/zen-displays"; }
+    Mod+A { spawn-sh "~/.local/bin/zen-audio"; }
     Mod+Shift+A { spawn-sh "~/.local/bin/zen-center"; }
 
     XF86AudioRaiseVolume  allow-when-locked=true { spawn-sh "~/.local/bin/zen-step volume up"; }
     XF86AudioLowerVolume  allow-when-locked=true { spawn-sh "~/.local/bin/zen-step volume down"; }
     
-    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
-    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+    XF86AudioMute        allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mute"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mic-mute"; }
     XF86AudioPlay        allow-when-locked=true { spawn-sh "playerctl play-pause"; }
     XF86AudioStop        allow-when-locked=true { spawn-sh "playerctl stop"; }
     XF86AudioPrev        allow-when-locked=true { spawn-sh "playerctl previous"; }

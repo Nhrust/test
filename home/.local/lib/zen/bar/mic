@@ -1,0 +1,7 @@
+#!/bin/sh
+# mic — Waybar module: an icon while the default input is muted.
+if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -q MUTED; then
+	printf '{"text": "\363\260\215\255", "class": "muted"}\n'
+else
+	printf '{"text": ""}\n'
+fi

@@ -155,6 +155,11 @@ window#waybar {
     padding-left: 10px;
 }
 
+#custom-mic {
+    padding: 0 10px 0 0;
+    color: @zen_critical;
+}
+
 #custom-caffeine {
     padding: 0 10px 0 0;
     color: @zen_fg;

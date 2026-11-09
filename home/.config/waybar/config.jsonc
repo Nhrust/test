@@ -128,7 +128,8 @@
         "reverse-scrolling": true,
         "on-scroll-up": "~/.local/bin/zen-step volume up",
         "on-scroll-down": "~/.local/bin/zen-step volume down",
-        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-click": "~/.local/bin/zen-audio",
+        "on-click-middle": "~/.local/bin/zen-audio mute",
         "tooltip": false,
         "format-icons": [
             "󰕿",
@@ -157,8 +158,17 @@
         "orientation": "horizontal",
         "modules": [
             "image#volume",
-            "wireplumber"
+            "wireplumber",
+            "custom/mic"
         ]
+    },
+    "custom/mic": {
+        "exec": "~/.local/lib/zen/bar/mic",
+        "return-type": "json",
+        "signal": 12,
+        "interval": 5,
+        "on-click": "~/.local/bin/zen-audio mic-mute",
+        "tooltip": false
     },
     "custom/caffeine": {
         "exec": "~/.local/bin/zen-displays caffeine",
@@ -183,7 +193,8 @@
         "size": 14,
         "signal": 8,
         "interval": 30,
-        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-click": "~/.local/bin/zen-audio",
+        "on-click-middle": "~/.local/bin/zen-audio mute",
         "on-scroll-up": "~/.local/bin/zen-step volume up",
         "on-scroll-down": "~/.local/bin/zen-step volume down",
         "reverse-scrolling": true,

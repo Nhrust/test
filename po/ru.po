@@ -403,3 +403,81 @@ msgstr "Поиск"
 
 msgid "Console and boot menu colours skipped: sudo is needed"
 msgstr "Цвета консоли и меню загрузки пропущены: нужен sudo"
+
+msgid "Applications"
+msgstr "Приложения"
+
+msgid "Connected: {}"
+msgstr "Подключено: {}"
+
+msgid "Could not connect: {}"
+msgstr "Не удалось подключить: {}"
+
+msgid "Could not disconnect: {}"
+msgstr "Не удалось отключить: {}"
+
+msgid "Disconnected: {}"
+msgstr "Отключено: {}"
+
+msgid "Input"
+msgstr "Вход"
+
+msgid "Input level"
+msgstr "Уровень входа"
+
+msgid "Microphone"
+msgstr "Микрофон"
+
+msgid "No devices"
+msgstr "Нет устройств"
+
+msgid "No paired audio devices; pair one with bluetoothctl"
+msgstr "Нет сопряжённых аудиоустройств; сопрягите через bluetoothctl"
+
+msgid "Nothing is playing"
+msgstr "Ничего не играет"
+
+msgid "Output"
+msgstr "Выход"
+
+msgid "Sound"
+msgstr "Звук"
+
+msgid "Volume"
+msgstr "Громкость"
+
+msgid "applications"
+msgstr "приложения"
+
+msgid "connected"
+msgstr "подключено"
+
+msgid "connecting…"
+msgstr "подключение…"
+
+msgid "disconnecting…"
+msgstr "отключение…"
+
+msgid "input level"
+msgstr "уровень входа"
+
+msgid "inputs"
+msgstr "входы"
+
+msgid "not connected"
+msgstr "не подключено"
+
+msgid "outputs"
+msgstr "выходы"
+
+msgid "sound"
+msgstr "звук"
+
+msgid "volume"
+msgstr "громкость"
+
+msgid "{} connected"
+msgid_plural "{} connected"
+msgstr[0] "{} подключено"
+msgstr[1] "{} подключено"
+msgstr[2] "{} подключено"

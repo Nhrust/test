@@ -22,7 +22,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Path | What |
 |---|---|
-| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen apply`, `zen diff`, `zen gtklock`) |
+| `~/.local/bin/` | commands you run or bind: `zen-center` (notifications, calendar, weather), `zen-displays`, `zen-audio` (outputs, inputs, levels, applications, Bluetooth), `zen-clipboard`, `zen-power`, `zen-lock`, `zen-step`, and `zen` for maintenance (`zen apply`, `zen diff`, `zen gtklock`) |
 | `~/.local/lib/zen/` | internals: `bar/` (Waybar and tmux modules), background helpers, the shared `zen.py` and `zen.sh` |
 | `~/.local/share/zen/` | data: the gtklock module source and `templates/` — files that carry the palette (mako, GTK, gtklock, Qt, KDE, Kvantum, foot, Niri borders) |
 | `~/.config/zen/zen.conf` | your settings |

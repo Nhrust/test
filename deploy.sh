@@ -35,7 +35,8 @@ BACKUP=${ZEN_BACKUP:-"$HOME/zen-deploy-backup-$(date +%Y%m%d-%H%M%S)"}
 REBUILD=$(mktemp)
 LOCALES=$(mktemp)
 SSHD=$(mktemp)
-trap 'rm -f "$REBUILD" "$LOCALES" "$SSHD"' EXIT
+RELOAD=$(mktemp)
+trap 'rm -f "$REBUILD" "$LOCALES" "$SSHD" "$RELOAD"' EXIT
 
 say() { printf '%s\n' "$*"; }
 run() { say "+ $*"; [ -n "$DRY" ] || "$@"; }
@@ -71,6 +72,10 @@ place() {
 			echo 1 > "$REBUILD" ;;
 		/etc/locale.gen)
 			echo 1 > "$LOCALES" ;;
+		"$HOME/.config/waybar/"*)
+			echo waybar >> "$RELOAD" ;;
+		"$HOME/.config/mako/"*)
+			echo mako >> "$RELOAD" ;;
 	esac
 	if $sudo test -e "$dst"; then
 		run $sudo mkdir -p "$BACKUP$(dirname "$dst")"
@@ -187,6 +192,9 @@ fi
 
 # 5. boot image and lock screen module
 [ ! -s "$REBUILD" ] || run sudo mkinitcpio -P
+# running programs pick up their new configs
+! grep -qx waybar "$RELOAD" || run pkill -USR2 -x waybar || true
+! grep -qx mako "$RELOAD" || run makoctl reload || true
 [ ! -s "$SSHD" ] || run sudo systemctl try-reload-or-restart sshd.service
 run "$HOME/.local/bin/zen" gtklock || say "! gtklock module not built; run: zen gtklock"
 

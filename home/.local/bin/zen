@@ -15,7 +15,7 @@ usage: zen COMMAND
   diff [PATH...]     what differs from the repository deploy.sh last used
   gtklock [--force]  rebuild zen-module when gtklock or its source changed
 
-menus:  zen-center  zen-displays  zen-clipboard  zen-power
+menus:  zen-center  zen-displays  zen-audio  zen-clipboard  zen-power
 other:  zen-lock  zen-step
 EOF
 		[ -z "${1:-}" ] || [ "$1" = help ] || [ "$1" = -h ] || [ "$1" = --help ] || exit 1 ;;
