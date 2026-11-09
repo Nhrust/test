@@ -148,7 +148,9 @@ def peers(ts):
 
 
 def peer_name(p):
-    return p.get("HostName") or (p.get("DNSName") or "").split(".")[0] or "?"
+    """The name tailscale status shows: the MagicDNS name, which can differ from the
+    device's own host name (renamed in the admin console, or a "-1" for a twin)."""
+    return (p.get("DNSName") or "").split(".")[0] or p.get("HostName") or "?"
 
 
 def exit_node(ts):

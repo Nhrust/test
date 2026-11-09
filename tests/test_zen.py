@@ -454,7 +454,7 @@ class TestNetwork(Zen):
                              "IP6.ADDRESS": ["fd00::23/64", "fe80::1/64"]}}}
         self.state["tailscale"] = {
             "BackendState": "Running",
-            "Peer": {"nodekey:a": {"HostName": "nas", "DNSName": "nas.tail1234.ts.net.", "OS": "linux",
+            "Peer": {"nodekey:a": {"HostName": "localhost", "DNSName": "nas.tail1234.ts.net.", "OS": "linux",
                                    "TailscaleIPs": ["100.64.0.2", "fd7a:115c:a1e0::2"], "Online": True,
                                    "ExitNodeOption": True, "ExitNode": False},
                      "nodekey:b": {"HostName": "phone", "DNSName": "phone.tail1234.ts.net.", "OS": "android",
