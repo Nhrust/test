@@ -275,10 +275,13 @@ HANDLERS = {
 def main():
     log()
     st = load()
+    before = json.dumps(st, sort_keys=True)
     if NAME in ("wl-copy",):
         sys.stdin.read()
     rc = HANDLERS.get(NAME, passive)(st)
-    if NAME != "sudo":
+    # only calls that change something write, so a read running at the same
+    # time as a background change cannot undo it
+    if NAME != "sudo" and json.dumps(st, sort_keys=True) != before:
         save(st)
     return rc
 

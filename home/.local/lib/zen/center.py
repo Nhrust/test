@@ -81,7 +81,7 @@ CONDITIONS = {
     392: N_("light snow with thunder"), 395: N_("heavy snow with thunder"),
 }
 
-INIT, SELECT, DELETE, WIPE, LEFT, RIGHT, TAB, PREV_M, NEXT_M = 0, 1, 3, 11, 13, 14, 15, 17, 18
+INIT, SELECT, DELETE, WIPE, ESC, LEFT, RIGHT, TAB, PREV_M, NEXT_M = 0, 1, 3, 11, 12, 13, 14, 15, 17, 18
 
 
 def option(key, value):
@@ -510,24 +510,30 @@ def show(offset, focus=None, confirm=False, cal=False):
         sys.stdout.write(f"{text}\0info\x1f{info}{extra}\n")
 
 
-def detail(offset, info, focus=0):
+def detail(offset, info, focus=None):
+    """The whole notification, then Open and Delete; Back, Escape or ← return to the list."""
     n = find(info)
     if n is None:
         show(offset, "dnd")
         return
     mark_read(info)
     common_options(offset, False, f'{offset}:l:d={info.replace(":", "_")}')
-    rows = []
+    text = []
     if n.get("app_name"):
-        rows.append(f'<span alpha="60%">{html.escape(n["app_name"])}</span>')
+        text.append(f'<span alpha="60%">{html.escape(n["app_name"])}</span>')
     for part, bold in ((n.get("summary") or "", True), (n.get("body") or "", False)):
         for para in part.splitlines():
             for line in textwrap.wrap(para, WRAP) or [""]:
                 line = html.escape(line)
-                rows.append(f"<b>{line}</b>" if bold else line)
-    option("new-selection", str(min(focus, len(rows) - 1)))
-    for i, text in enumerate(rows):
-        sys.stdout.write(f"{text}\0info\x1ft{i}\n")
+                text.append(f"<b>{line}</b>" if bold else line)
+    rows = [("‹ " + html.escape(_("Back")), "back", False)]
+    rows += [(t, f"t{i}", True) for i, t in enumerate(text)]
+    rows += [(html.escape(_("Go to the app")), "open", False), (html.escape(_("Delete")), "del", False)]
+    infos = [r[1] for r in rows]
+    option("new-selection", str(infos.index(focus) if focus in infos else len(rows) - 2))
+    for label, key, passive in rows:
+        extra = "\x1fnonselectable\x1ftrue" if passive else ""
+        sys.stdout.write(f"{label}\0info\x1f{key}{extra}\n")
 
 
 def fits(n):
@@ -607,7 +613,8 @@ def launch():
     name = _("summary")
     cmd = ["rofi", "-show", name, "-modes", f"{name}:{SELF} list",
            "-replace", "-show-icons",
-           "-kb-delete-entry", "Shift+Delete,MouseMiddle",
+           "-kb-cancel", "Control+g,Control+bracketleft", "-kb-custom-3", "Escape",
+           "-kb-delete-entry", "Shift+Delete,MouseMiddle,MouseSecondary",
            "-kb-move-char-back", "Control+b", "-kb-move-char-forward", "Control+f",
            "-kb-custom-4", "Left", "-kb-custom-5", "Right",
            "-kb-element-next", "", "-kb-element-prev", "",
@@ -616,22 +623,21 @@ def launch():
     if THEME.exists():
         title_text = _("Notifications").replace('"', "")
         cmd += ["-theme", str(THEME), "-theme-str", f'textbox-title {{ content: "{title_text}"; }}']
-    cmd += zen.switch_args({2, 4, 5, 6})
+    cmd += zen.switch_args({2, 3, 4, 5, 6})
     os.execvp("rofi", cmd)
 
 
 def handle_detail(retv, info, offset, opened):
-    if retv == LEFT:
+    if retv in (LEFT, ESC) or (retv == SELECT and info == "back"):
         show(offset, opened)
-    elif retv == SELECT and go(opened):
+    elif retv == SELECT and info == "open" and go(opened):
         pass
-    elif retv in (RIGHT, DELETE):
+    elif retv in (RIGHT, DELETE) or (retv == SELECT and info == "del"):
         keys = [k for k, _x, _y in items()]
         delete(opened)
         show(offset, neighbour(keys, opened))
     else:
-        line = int(info[1:]) if info[:1] == "t" and info[1:].isdigit() else 0
-        detail(offset, opened, line)
+        detail(offset, opened, info)
     return 0
 
 
@@ -675,7 +681,9 @@ def main():
     arrow = retv in (LEFT, RIGHT)
 
     if opened:
-        return handle_detail(retv, info, offset, resolve(opened))
+        return handle_detail(retv, os.environ.get("ROFI_INFO", ""), offset, resolve(opened))
+    if retv == ESC:
+        return 0
 
     if arrow and not cal and info == "clear":
         if retv == LEFT:

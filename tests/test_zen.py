@@ -233,8 +233,33 @@ class TestCenter(Zen):
         self.assertEqual(self.calls("wl-copy"), [])
 
     def test_long_note_opens_detail(self):
-        options, _rows = self.menu("zen-center", SELECT, "h:11")
+        options, rows = self.menu("zen-center", SELECT, "h:11")
         self.assertIn("d=h_11", options["data"])
+        infos = [r[1]["info"] for r in rows]
+        self.assertEqual((infos[0], infos[-2], infos[-1]), ("back", "open", "del"))
+        self.assertTrue(all(r[1].get("nonselectable") for r in rows[1:-2]))
+        self.assertEqual(rows[int(options["new-selection"])][1]["info"], "open")
+
+    def test_detail_back_and_delete(self):
+        options, _rows = self.menu("zen-center", SELECT, "h:11")
+        data = options["data"]
+        options, rows = self.menu("zen-center", SELECT, "back", data)
+        self.assertNotIn("d=", options["data"])
+        self.assertEqual(rows[int(options["new-selection"])][1]["info"], "h:11")
+        options, _rows = self.menu("zen-center", ESC, "t2", data)
+        self.assertNotIn("d=", options["data"])
+        _o, rows = self.menu("zen-center", SELECT, "del", data)
+        self.assertNotIn("h:11", [r[1]["info"] for r in rows])
+
+    def test_escape_closes_the_list(self):
+        res = self.run_cmd(self.home / ".local/bin/zen-center", "list",
+                           env={"ROFI_RETV": str(ESC), "ROFI_INFO": "dnd", "ROFI_DATA": "0:l"})
+        self.assertEqual(res.stdout, "")
+
+    def test_right_click_deletes(self):
+        self.menu("zen-center", DELETE, "h:12")
+        _o, rows = self.menu("zen-center")
+        self.assertNotIn("h:12", [r[1]["info"] for r in rows])
 
     def test_right_deletes(self):
         self.menu("zen-center", RIGHT, "a:14")

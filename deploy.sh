@@ -184,6 +184,15 @@ enable_units() {
 		if $check 2>/dev/null | grep -q '^\[Install\]'; then
 			# shellcheck disable=SC2086
 			run $act
+			# inside a running session a new user unit starts now, not at the next login
+			if [ "$scope" = user ] && [ -z "$DRY" ] &&
+				systemctl --user is-active --quiet graphical-session.target &&
+				! systemctl --user is-active --quiet "$unit"; then
+				case $unit in
+					zen-idle.service) systemctl --user is-active --quiet zen-caffeine.service || run systemctl --user start "$unit" || true ;;
+					*) run systemctl --user start "$unit" || true ;;
+				esac
+			fi
 		else
 			say "- $unit: started by the units that need it"
 		fi
