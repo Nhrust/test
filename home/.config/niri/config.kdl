@@ -25,7 +25,7 @@ input {
 
 cursor {
     hide-after-inactive-ms 3000
-    
+
     xcursor-theme "Bibata-Modern-Classic"
     xcursor-size 18
 }
@@ -59,7 +59,7 @@ layout {
     }
 
     border {
-        on 
+        on
         width 2
     }
 
@@ -161,37 +161,51 @@ switch-events {
 
 binds {
 
+    //Main
     Mod+T { spawn "foot"; }
-    Mod+Space { spawn-sh "~/.local/bin/zen-apps"; }
     Mod+L { spawn-sh "~/.local/bin/zen-lock"; }
-    Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
-    
-    Mod+Shift+Q { spawn-sh "~/.local/bin/zen-power"; }
+    //Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
+
+    //Utilities
     Mod+E { spawn "nautilus" "--new-window"; }
     Mod+V { spawn-sh "~/.local/bin/zen-clipboard"; }
-    
+
+    //Menu
+    Mod+Space { spawn-sh "~/.local/bin/zen-apps"; }
     Ctrl+Shift+Escape { spawn "foot" "btop"; }
+
+    //Monitor
     Mod+P { spawn-sh "~/.local/bin/zen-displays"; }
+    Mod+K { spawn-sh "~/.local/bin/zen-displays caffeine toggle"; }
+
+    //Audio
     Mod+M { spawn-sh "~/.local/bin/zen-audio"; }
     Mod+Shift+M allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mute"; }
     Mod+Ctrl+M  allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mic-mute"; }
-    Mod+K { spawn-sh "~/.local/bin/zen-displays caffeine toggle"; }
-    Mod+N { spawn-sh "~/.local/bin/zen-network"; }
-    Mod+Shift+A { spawn-sh "~/.local/bin/zen-center"; }
 
+    //Network
+    Mod+N { spawn-sh "~/.local/bin/zen-network"; }
+
+    //Custom menu
+    Mod+Shift+A { spawn-sh "~/.local/bin/zen-center"; }
+    Mod+Shift+Q { spawn-sh "~/.local/bin/zen-power"; }
+
+    //Audio bind
     XF86AudioRaiseVolume  allow-when-locked=true { spawn-sh "~/.local/bin/zen-step volume up"; }
     XF86AudioLowerVolume  allow-when-locked=true { spawn-sh "~/.local/bin/zen-step volume down"; }
-    
+
     XF86AudioMute        allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mute"; }
     XF86AudioMicMute     allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mic-mute"; }
+
     XF86AudioPlay        allow-when-locked=true { spawn-sh "playerctl play-pause"; }
     XF86AudioStop        allow-when-locked=true { spawn-sh "playerctl stop"; }
     XF86AudioPrev        allow-when-locked=true { spawn-sh "playerctl previous"; }
     XF86AudioNext        allow-when-locked=true { spawn-sh "playerctl next"; }
-    
+
+    //Light bind
     XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "~/.local/bin/zen-step brightness up"; }
     XF86MonBrightnessDown allow-when-locked=true { spawn-sh "~/.local/bin/zen-step brightness down"; }
-    
+
     Mod+O repeat=false { toggle-overview; }
     Mod+Q repeat=false { close-window; }
 

@@ -15,10 +15,6 @@ focused_id = None
 last_close = 0.0
 
 
-def log(*parts):
-    print("autowidth:", *parts, file=sys.stderr, flush=True)
-
-
 def niri(*args):
     return subprocess.run(["niri", "msg", *args], capture_output=True, text=True)
 
@@ -91,7 +87,6 @@ def on_new_window(w):
             if left[0]["layout"]["tile_size"][0] >= FULL * width:
                 set_width(left[0]["id"], "50%")
             set_width(w["id"], "50%")
-            log(f"window {w['id']} opened beside a stack: half of the screen")
             return
     set_width(w["id"], "100%")
 
@@ -217,11 +212,9 @@ def track_stacks(changed, old_widths):
         if now:
             if width and old_widths.get(win_id):
                 saved[win_id] = old_widths[win_id] / width
-            log(f"window {win_id} joined a column, width {saved.get(win_id)} remembered")
             reveal(win_id)
         elif win_id in saved and time.monotonic() - last_close > 1:
             share = saved.pop(win_id)
-            log(f"window {win_id} left the column, width back to {share_to_percent(share)}%")
             set_width(win_id, f"{share_to_percent(share)}%")
             reveal(win_id)
 
