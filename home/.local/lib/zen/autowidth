@@ -2,12 +2,18 @@
 import json
 import subprocess
 import sys
+import time
 
 FULL = 0.75
 windows = {}
 partner = {}
 pending = set()
 shrunk_by_us = set()
+saved = {}          # window -> share of the screen width it had before Mod+[ / ] put it into a stack
+stacked = {}        # window -> was it in a column with others at the last look
+stack_partner = {}  # new window -> windows of the stack it was opened next to
+focused_id = None
+last_close = 0.0
 
 
 def niri(*args):
@@ -71,7 +77,24 @@ def on_new_window(w):
             partner[left[0]["id"]] = w["id"]
             partner[w["id"]] = left[0]["id"]
             return
+    if len(left) > 1 and stack_is_free(w["workspace_id"], col - 1) and not is_fullscreen(left[0]):
+        # a stack of windows already fills a half: the new window takes the other half
+        width = output_width()
+        if width:
+            if left[0]["layout"]["tile_size"][0] >= FULL * width:
+                set_width(left[0]["id"], "50%")
+            set_width(w["id"], "50%")
+            stack_partner[w["id"]] = [x["id"] for x in left]
+            return
     set_width(w["id"], "100%")
+
+
+def stack_is_free(workspace_id, col):
+    """No half-width column on the left of this one: it is not a half of a pair yet."""
+    before = column_windows(workspace_id, col - 1) if col > 1 else []
+    width = output_width()
+    return not before or not width or is_fullscreen(before[0]) \
+        or before[0]["layout"]["tile_size"][0] >= FULL * width
 
 
 def rebuild_pairs():
@@ -112,6 +135,51 @@ def show_pair():
     niri("action", "focus-window", "--id", str(focused["id"]))
 
 
+def reveal(win_id):
+    """Bring the window and the column next to it into view, the focus stays on the window."""
+    w = windows.get(win_id)
+    pos = (w or {}).get("layout", {}).get("pos_in_scrolling_layout")
+    if not pos:
+        return
+    for col in (pos[0] - 1, pos[0] + 1):
+        mates = [m for m in column_windows(w["workspace_id"], col) if m["id"] != win_id]
+        if mates:
+            niri("action", "focus-window", "--id", str(mates[0]["id"]))
+            niri("action", "focus-window", "--id", str(win_id))
+            return
+
+
+def share_to_percent(share):
+    if abs(share - 0.5) < 0.06:
+        return 50
+    if share > 0.9:
+        return 100
+    return max(10, round(share * 100))
+
+
+def track_stacks(changed, old_widths):
+    """Mod+[ / ] on the focused window: remember its width when it joins a column of
+    others, give it back when it leaves; keep the pair in view both ways."""
+    width = output_width()
+    for win_id in changed:
+        w = windows.get(win_id)
+        pos = ((w or {}).get("layout") or {}).get("pos_in_scrolling_layout")
+        if not pos or w.get("is_floating"):
+            continue
+        now = len(column_windows(w["workspace_id"], pos[0])) > 1
+        was = stacked.get(win_id, False)
+        stacked[win_id] = now
+        if now == was or win_id != focused_id:
+            continue
+        if now:
+            if width and old_widths.get(win_id):
+                saved[win_id] = old_widths[win_id] / width
+            reveal(win_id)
+        elif win_id in saved and time.monotonic() - last_close > 1:
+            set_width(win_id, f"{share_to_percent(saved.pop(win_id))}%")
+            reveal(win_id)
+
+
 def on_resized(win_id, old_width, new_width):
     if win_id not in partner:
         return
@@ -127,9 +195,16 @@ def on_resized(win_id, old_width, new_width):
 
 
 def on_closed(win_id, user_closed=False):
+    global last_close
+    last_close = time.monotonic()
     windows.pop(win_id, None)
     pending.discard(win_id)
     shrunk_by_us.discard(win_id)
+    saved.pop(win_id, None)
+    stacked.pop(win_id, None)
+    mates = [i for i in stack_partner.pop(win_id, []) if i in windows]
+    if mates:
+        set_width(mates[0], "100%")
     other = partner.pop(win_id, None)
     if other is not None:
         partner.pop(other, None)
@@ -155,6 +230,7 @@ def toggle():
 
 
 def main():
+    global focused_id
     if sys.argv[1:] == ["toggle"]:
         return toggle()
     proc = subprocess.Popen(["niri", "msg", "--json", "event-stream"],
@@ -172,22 +248,32 @@ def main():
                 if i not in windows:
                     on_closed(i)
             rebuild_pairs()
+            for i in windows:
+                pos = (windows[i].get("layout") or {}).get("pos_in_scrolling_layout")
+                stacked[i] = bool(pos) and len(column_windows(windows[i]["workspace_id"], pos[0])) > 1
+        elif "WindowFocusChanged" in event:
+            focused_id = event["WindowFocusChanged"].get("id")
         elif "WindowOpenedOrChanged" in event:
             w = event["WindowOpenedOrChanged"]["window"]
             is_new = w["id"] not in windows
             windows[w["id"]] = w
+            if is_new:
+                stacked[w["id"]] = False
             if is_new or (w["id"] in pending and w["layout"].get("pos_in_scrolling_layout")):
                 pending.discard(w["id"])
                 on_new_window(w)
         elif "WindowLayoutsChanged" in event:
             resized = []
+            old_widths = {}
             for win_id, layout in event["WindowLayoutsChanged"]["changes"]:
                 if win_id in windows:
                     old = (windows[win_id].get("layout") or {}).get("tile_size", (0, 0))[0]
                     windows[win_id]["layout"] = layout
                     resized.append((win_id, old, layout["tile_size"][0]))
+                    old_widths[win_id] = old
             for win_id, old, new in resized:
                 on_resized(win_id, old, new)
+            track_stacks([r[0] for r in resized], old_widths)
             for win_id in list(pending):
                 if (windows.get(win_id, {}).get("layout") or {}).get("pos_in_scrolling_layout"):
                     pending.discard(win_id)

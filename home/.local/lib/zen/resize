@@ -62,6 +62,9 @@ def main(argv):
         return 0
     niri("action", what, "--id", str(me["id"]), f"{'+' if grow else '-'}{STEP}%")
     niri("action", what, "--id", str(other["id"]), f"{'-' if grow else '+'}{STEP}%")
+    # the strip follows the focused column when the widths change: bring both back into view
+    niri("action", "focus-window", "--id", str(other["id"]))
+    niri("action", "focus-window", "--id", str(me["id"]))
     return 0
 
 

@@ -1160,23 +1160,101 @@ class TestResize(Zen):
         # focused column 1 of two: right grows it, the second loses as much
         self.layout((1, True, 7, [1, 1]), (2, False, 7, [2, 1]), (3, False, 8, [2, 1]))
         self.assertEqual(self.actions("right"), ["niri msg action set-window-width --id 1 +5%",
-                                                 "niri msg action set-window-width --id 2 -5%"])
+                                                 "niri msg action set-window-width --id 2 -5%",
+                                                 "niri msg action focus-window --id 2",
+                                                 "niri msg action focus-window --id 1"])
 
     def test_last_column_uses_the_border_before_it(self):
         self.layout((1, False, 7, [1, 1]), (2, True, 7, [2, 1]))
         self.assertEqual(self.actions("left"), ["niri msg action set-window-width --id 2 +5%",
-                                                "niri msg action set-window-width --id 1 -5%"])
+                                                "niri msg action set-window-width --id 1 -5%",
+                                                "niri msg action focus-window --id 1",
+                                                "niri msg action focus-window --id 2"])
 
     def test_within_a_column(self):
         self.layout((1, True, 7, [1, 1]), (2, False, 7, [1, 2]))
         self.assertEqual(self.actions("up"), ["niri msg action set-window-height --id 1 -5%",
-                                              "niri msg action set-window-height --id 2 +5%"])
+                                              "niri msg action set-window-height --id 2 +5%",
+                                              "niri msg action focus-window --id 2",
+                                              "niri msg action focus-window --id 1"])
 
     def test_alone_or_floating(self):
         self.layout((1, True, 7, [1, 1]), (2, False, 8, [2, 1]))
         self.assertEqual(self.actions("right"), [])
         self.layout((1, True, 7, None), (2, False, 7, [1, 1]))
         self.assertEqual(self.actions("right"), [])
+
+
+class TestAutowidth(unittest.TestCase):
+    """The window-layout daemon: stacks (Mod+[ / ]) next to the old pair logic."""
+    W = 1920
+
+    def setUp(self):
+        import importlib.machinery
+        import importlib.util
+        path = str(REPO / "home/.local/lib/zen/autowidth")
+        loader = importlib.machinery.SourceFileLoader("zen_autowidth", path)
+        spec = importlib.util.spec_from_loader("zen_autowidth", loader)
+        self.m = importlib.util.module_from_spec(spec)
+        loader.exec_module(self.m)
+        self.sent = []
+        self.m.niri = lambda *a: self.sent.append(" ".join(a)) or subprocess.CompletedProcess(a, 0, "", "")
+        self.m.output_size = lambda: (self.W, 1200)
+        self.m.output_width = lambda: self.W
+
+    def win(self, i, col, row=1, width=960):
+        w = {"id": i, "workspace_id": 1, "is_floating": False,
+             "layout": {"pos_in_scrolling_layout": [col, row], "tile_size": [width, 600]}}
+        self.m.windows[i] = w
+        return w
+
+    def test_new_window_next_to_a_stack_takes_the_other_half(self):
+        self.win(1, 1)
+        self.win(2, 1, 2)
+        new = self.win(3, 2)
+        self.m.on_new_window(new)
+        self.assertEqual(self.sent, ["action set-window-width --id 3 50%"])
+        self.assertEqual(self.m.stack_partner[3], [1, 2])
+        self.m.on_closed(3)
+        self.assertIn("action set-window-width --id 1 100%", self.sent)
+
+    def test_pair_with_a_stack_is_complete(self):
+        self.win(1, 1)
+        self.win(2, 2)
+        self.win(3, 2, 2)
+        self.m.partner.update({1: 2, 2: 1})
+        self.m.on_new_window(self.win(4, 3))
+        self.assertEqual(self.sent, ["action set-window-width --id 4 100%"])
+
+    def test_join_and_leave_restores_the_size(self):
+        self.win(1, 1)
+        self.win(2, 2)
+        c = self.win(3, 3, width=1900)
+        for i in (1, 2, 3):
+            self.m.stacked[i] = False
+        self.m.focused_id = 3
+        # Mod+] ... Mod+[ : window 3 goes into column 2
+        old = {3: c["layout"]["tile_size"][0], 2: 960}
+        c["layout"] = {"pos_in_scrolling_layout": [2, 2], "tile_size": [960, 600]}
+        self.m.track_stacks([3, 2], old)
+        self.assertEqual(self.sent, ["action focus-window --id 1", "action focus-window --id 3"])
+        self.sent.clear()
+        # and out again
+        c["layout"] = {"pos_in_scrolling_layout": [3, 1], "tile_size": [960, 600]}
+        self.m.track_stacks([3], {3: 960})
+        self.assertEqual(self.sent[0], "action set-window-width --id 3 100%")
+
+    def test_closing_a_window_does_not_restore(self):
+        self.win(2, 1)
+        c = self.win(3, 1, 2)
+        self.m.stacked.update({2: True, 3: True})
+        self.m.saved[3] = 1.0
+        self.m.focused_id = 3
+        self.m.on_closed(2)
+        self.m.saved[3] = 1.0
+        c["layout"]["pos_in_scrolling_layout"] = [1, 1]
+        self.m.track_stacks([3], {3: 960})
+        self.assertEqual(self.sent, [])
 
 
 class TestConfigs(Zen):
