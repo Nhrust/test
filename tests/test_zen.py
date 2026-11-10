@@ -1235,6 +1235,16 @@ class TestAutowidth(unittest.TestCase):
         self.m.on_new_window(self.win(4, 3))
         self.assertEqual(self.sent, ["action set-window-width --id 4 100%"])
 
+    def test_full_window_after_a_pair_still_pairs_with_the_next(self):
+        # pair 1|2, full-screen window 3, then 4: 3 shrinks to half and pairs with 4 as before
+        self.win(1, 1)
+        self.win(2, 2)
+        self.win(3, 3, width=1900)
+        self.m.partner.update({1: 2, 2: 1})
+        self.m.on_new_window(self.win(4, 4))
+        self.assertEqual(self.sent, ["action set-window-width --id 3 50%"])
+        self.assertEqual(self.m.partner[4], 3)
+
     def test_join_and_leave_restores_the_size(self):
         self.win(1, 1)
         self.win(2, 2)

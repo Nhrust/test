@@ -97,9 +97,12 @@ def on_new_window(w):
 
 
 def stack_is_free(workspace_id, col):
-    """No half-width column on the left of this one: it is not a half of a pair yet."""
+    """This column is not the second half of a pair: it is wide, or has no half-width column before it."""
     before = column_windows(workspace_id, col - 1) if col > 1 else []
+    own = column_windows(workspace_id, col)
     width = output_width()
+    if own and width and own[0]["layout"]["tile_size"][0] >= FULL * width:
+        return True  # a wide column is not half of anything
     return not before or not width or is_fullscreen(before[0]) \
         or before[0]["layout"]["tile_size"][0] >= FULL * width
 
