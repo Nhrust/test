@@ -170,7 +170,7 @@ def icon(key):
 
 def header(keys):
     muted = zen.palette()["muted"]
-    icons = " · ".join(icon(k) for k in keys) or esc(_("nothing"))
+    icons = esc(_("On the panel")) + ":  " + (" · ".join(icon(k) for k in keys) or esc(_("nothing")))
     count = esc(_("{} of {}").format(len(keys), MAX))
     hint = esc(_("Enter switches · Alt+↑↓ moves"))
     return f'{icons}   <span foreground="{muted}">{count}</span>\u2028<span foreground="{muted}">{hint}</span>'
@@ -180,12 +180,11 @@ def show(focus=None):
     """On the panel, in order; below it what can be added, by group."""
     items = catalog()
     keys = chosen()
-    muted = zen.palette()["muted"]
-
     def title(text):
-        return (f'<span foreground="{muted}"><b>{esc(text)}</b></span>', "none", False, True)
+        # no colour of its own: dimmed, it stays readable on the highlight too
+        return (f'<span alpha="60%"><b>{esc(text)}</b></span>', "none", False, True)
 
-    rows = [title(_("On the panel"))]
+    rows = []
     for k in keys:
         group, name = items[k][0], items[k][1]
         rows.append((f"\u2003{esc(group)}: {esc(name)} · {esc('‹ ' + _('on') + ' ›')}", f"key:{k}", True, False))

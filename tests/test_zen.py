@@ -1070,9 +1070,12 @@ class TestVitals(Zen):
     def test_sections(self):
         """On the panel first, then what can be added under the name of its group."""
         _o, rows = self.menu("zen-vitals")
+        options, rows = self.menu("zen-vitals")
         titles = [r[0] for r in rows if r[1].get("nonselectable")]
-        self.assertIn("On the panel", titles[0])
-        self.assertTrue(any("Processor" in t for t in titles[1:]))
+        self.assertIn("On the panel", options["message"])
+        self.assertEqual(rows[0][1]["info"], "key:cpu", "the list starts with a module, not a title")
+        self.assertTrue(any("Processor" in t for t in titles))
+        self.assertFalse(any("foreground" in t for t in titles), "a colour would not read on the highlight")
         self.assertIn("\u2003frequency · ‹ off ›", self.texts(rows))
 
     def test_default(self):
