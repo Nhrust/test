@@ -1,0 +1,4 @@
+# The KDE polkit agent (plasma-polkit-agent) plays a sound when it asks for a
+# password; this per-user setting of its "authenticate" event turns that off.
+[Event/authenticate]
+Action=
