@@ -15,6 +15,12 @@ window#waybar {
     color: @zen_fg;
 }
 
+/* the application launcher, at the left end before the workspaces */
+#custom-apps {
+    padding: 0 4px 0 14px;
+    color: @zen_fg;
+}
+
 #workspaces {
     padding: 0 10px;
 }

@@ -976,3 +976,15 @@ msgstr "%dч %dм"
 
 msgid "%dm"
 msgstr "%dм"
+
+msgid "Fan"
+msgstr "Вентилятор"
+
+msgid "speed, rpm"
+msgstr "обороты"
+
+msgid "rpm"
+msgstr "об/мин"
+
+msgid "On the panel"
+msgstr "На панели"

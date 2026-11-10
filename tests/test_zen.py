@@ -1034,12 +1034,12 @@ class TestSwitcher(Zen):
         return False
 
     def test_alt_digit_opens_another_menu(self):
-        """Alt+6 (kb-custom-16, ROFI_RETV 25) in the power menu opens the sound menu."""
-        _o, rows = self.menu("zen-power", 25, "balanced")
+        """Alt+5 (kb-custom-15, ROFI_RETV 24) in the power menu opens the sound menu."""
+        _o, rows = self.menu("zen-power", 24, "balanced")
         self.assertTrue(self.wait_for("rofi", "zen-audio list"))
 
     def test_own_icon_does_nothing(self):
-        self.menu("zen-power", 26, "balanced")
+        self.menu("zen-power", 25, "balanced")
         time.sleep(0.5)
         self.assertEqual(self.calls("rofi"), [])
 
@@ -1067,6 +1067,14 @@ class TestVitals(Zen):
     def keys(self, rows):
         return [r[1]["info"][4:] for r in rows if r[1].get("active")]
 
+    def test_sections(self):
+        """On the panel first, then what can be added under the name of its group."""
+        _o, rows = self.menu("zen-vitals")
+        titles = [r[0] for r in rows if r[1].get("nonselectable")]
+        self.assertIn("On the panel", titles[0])
+        self.assertTrue(any("Processor" in t for t in titles[1:]))
+        self.assertIn("\u2003frequency · ‹ off ›", self.texts(rows))
+
     def test_default(self):
         options, rows = self.menu("zen-vitals")
         self.assertEqual(self.keys(rows), ["cpu", "gpu", "memory", "temp", "speed"])
@@ -1081,9 +1089,11 @@ class TestVitals(Zen):
         self.assertEqual(self.keys(rows), ["cpu", "memory", "temp", "uptime", "speed"])
         self.menu("zen-vitals", 16, "key:speed")  # Alt+Down on the last: stays
         self.assertIn("vitals = cpu, memory, temp, uptime, speed", self.conf())
-        # the panel files follow
+        # the panel files follow when the menu closes (its launcher runs zen apply then)
+        self.assertFalse((self.home / ".config/waybar/zen-vitals.jsonc").exists(), "no reload at each step")
+        self.run_cmd(self.home / ".local/lib/zen/apply", "--user")
         made = json.loads((self.home / ".config/waybar/zen-vitals.jsonc").read_text().split("\n", 1)[1])
-        self.assertEqual(made["modules-left"], ["niri/workspaces", "custom/gap-l1", "cpu", "memory",
+        self.assertEqual(made["modules-left"], ["custom/apps", "niri/workspaces", "custom/gap-l1", "cpu", "memory",
                                                 "custom/temp", "custom/uptime", "custom/speed", "custom/gap-l2"])
         self.assertEqual(made["custom/uptime"]["on-click-right"], "~/.local/bin/zen-vitals")
         css = (self.home / ".config/waybar/zen-vitals.css").read_text()
@@ -1116,8 +1126,8 @@ class TestVitals(Zen):
             conf.write_text(f"[panel]\nvitals = {', '.join(keys[i:i + 6])}\n")
             self.run_cmd(self.home / ".local/lib/zen/apply", "--user")
             made = json.loads((self.home / ".config/waybar/zen-vitals.jsonc").read_text().split("\n", 1)[1])
-            self.assertEqual(len(made["modules-left"]), len(keys[i:i + 6]) + 3)
-            for name in made["modules-left"][2:-1]:
+            self.assertEqual(len(made["modules-left"]), len(keys[i:i + 6]) + 4)
+            for name in made["modules-left"][3:-1]:
                 command = made[name].get("exec")
                 if command:
                     self.assertTrue(os.access(self.home / command.split()[0][2:], os.X_OK), command)

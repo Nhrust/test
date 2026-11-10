@@ -1,6 +1,7 @@
 # The menus in the switcher at the top of every menu, in order: launcher and icon.
-# Alt+1, Alt+2, … open them in this order.
-zen-apps 󰀻
+# Alt+1, Alt+2, … open them in this order. The application launcher (Rofi
+# drun) is not among them: drun cannot take these keys; Mod+Space and the
+# button at the left end of the panel open it.
 zen-center 󰂚
 zen-clipboard 󰅇
 zen-displays 󰍹

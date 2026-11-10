@@ -1,6 +1,6 @@
 #!/bin/sh
 # zen-apps — the application launcher (Rofi drun); a second call closes it.
-# The other zen menus open it from their switcher (first icon, Alt+1).
+# Mod+Space and the button at the left end of the panel open it.
 if pgrep -f '^rofi -show drun -replace' >/dev/null; then
 	pkill -f '^rofi -show drun -replace'
 	exit 0

@@ -33,6 +33,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Where | Left click | Right click | Middle click | Wheel |
 |---|---|---|---|---|
+| applications (left end) | applications | — | — | — |
 | monitoring (processor, memory, …) | btop | choose the modules and their order | — | — |
 | player (its icon and ▶/⏸) | sound | play/pause | mute the player only | previous / next track |
 | clock, bell | notifications, calendar, weather | do not disturb on/off | clear all notifications | — |
@@ -49,7 +50,8 @@ the clipboard menu a middle click deletes an entry and a right click pins it.
 
 Mod+Space apps · Mod+Shift+A notifications · Mod+V clipboard · Mod+P displays ·
 Mod+N network · Mod+M sound · Mod+L lock · Ctrl+Shift+Esc btop. Inside a menu, Alt+1… or the
-icons on top open the other menus.
+icons on top open the other menus: Alt+1 notifications, 2 clipboard, 3 displays, 4 network,
+5 sound, 6 power.
 
 ## Deploy
 

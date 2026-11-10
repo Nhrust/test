@@ -25,6 +25,12 @@
         "group/sound",
         "group/power"
     ],
+    "custom/apps": {
+        "format": "󰀻",
+        "interval": 86400,
+        "on-click": "~/.local/bin/zen-apps",
+        "tooltip": false
+    },
     "niri/workspaces": {
         "format": ""
     },

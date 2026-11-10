@@ -4,9 +4,9 @@
 
 Up to six modules from the list below; Enter or the arrows switch one on or
 off, Alt+Up and Alt+Down move it. The choice is the line "vitals =" in the
-[panel] section of ~/.config/zen/zen.conf; "zen apply" turns it into
-waybar/zen-vitals.jsonc (the modules) and waybar/zen-vitals.css (their
-separators), and the panel reloads.
+[panel] section of ~/.config/zen/zen.conf, written at each step; when the menu
+closes, "zen apply" turns it into waybar/zen-vitals.jsonc (the modules) and
+waybar/zen-vitals.css (their separators), and the panel reloads once.
 """
 import html
 import json
@@ -74,7 +74,7 @@ def catalog():
                     custom("temp gpu", "󰔏 GPU {}", 5), hwmon(*GPU_SENSORS)),
         "tempnvme": (_("Temperature"), "NVMe", "custom/temp-nvme",
                      custom("temp nvme", "󰔏 NVMe {}", 5), hwmon("nvme")),
-        "fan": (_("Temperature"), _("fan"), "custom/fan", custom("fan", "󰈐 {}", 5),
+        "fan": (_("Fan"), _("speed, rpm"), "custom/fan", custom("fan", "\U000F0210 {} " + _("rpm"), 5),
                 bool(glob("/sys/class/hwmon/hwmon*/fan*_input"))),
         "speed": (_("Network"), _("download"), "custom/speed", custom("speed", "󰓢 {}"), True),
         "upload": (_("Network"), _("upload"), "custom/upload", custom("speed up", "󰕒 {}"), True),
@@ -136,7 +136,7 @@ def generated():
     items = catalog()
     keys = chosen()
     modules = [items[k][2] for k in keys]
-    config = {"modules-left": ["niri/workspaces", "custom/gap-l1", *modules, "custom/gap-l2"]}
+    config = {"modules-left": ["custom/apps", "niri/workspaces", "custom/gap-l1", *modules, "custom/gap-l2"]}
     for k in keys:
         settings = dict(items[k][3], **{"on-click": "foot btop", "on-click-right": "~/.local/bin/zen-vitals",
                                         "tooltip": False})
@@ -177,16 +177,28 @@ def header(keys):
 
 
 def show(focus=None):
+    """On the panel, in order; below it what can be added, by group."""
     items = catalog()
     keys = chosen()
-    rows = []
+    muted = zen.palette()["muted"]
+
+    def title(text):
+        return (f'<span foreground="{muted}"><b>{esc(text)}</b></span>', "none", False, True)
+
+    rows = [title(_("On the panel"))]
     for k in keys:
         group, name = items[k][0], items[k][1]
-        rows.append((f"{esc(group)}: {esc(name)} · {esc('‹ ' + _('on') + ' ›')}", f"key:{k}", True))
+        rows.append((f"\u2003{esc(group)}: {esc(name)} · {esc('‹ ' + _('on') + ' ›')}", f"key:{k}", True, False))
+    groups = {}
     for k, (group, name, _m, _s, present) in items.items():
         if k not in keys and present:
-            rows.append((f"{esc(group)}: {esc(name)} · {esc('‹ ' + _('off') + ' ›')}", f"key:{k}", False))
-    rows.append((esc(_("As it was")), "reset", False))
+            groups.setdefault(group, []).append((k, name))
+    for group, members in groups.items():
+        rows.append(title(group))
+        for k, name in members:
+            rows.append((f"\u2003{esc(name)} · {esc('‹ ' + _('off') + ' ›')}", f"key:{k}", False, False))
+    rows.append(title(""))
+    rows.append((esc(_("As it was")), "reset", False, False))
     option("prompt", _("panel"))
     option("message", header(keys))
     option("data", "main")
@@ -195,9 +207,12 @@ def show(focus=None):
     option("use-hot-keys", "true")
     option("keep-selection", "true")
     infos = [r[1] for r in rows]
+    if focus not in infos:
+        focus = next((r[1] for r in rows if not r[3]), None)
     option("new-selection", str(infos.index(focus) if focus in infos else 0))
-    for text, info, active in rows:
-        sys.stdout.write(f"{text}\0info\x1f{info}" + ("\x1factive\x1ftrue" if active else "") + "\n")
+    for text, info, active, passive in rows:
+        extra = ("\x1factive\x1ftrue" if active else "") + ("\x1fnonselectable\x1ftrue" if passive else "")
+        sys.stdout.write(f"{text}\0info\x1f{info}{extra}\n")
 
 
 def apply_now():
@@ -210,7 +225,6 @@ def act(retv, info):
     keys = chosen()
     if info == "reset":
         save([k.strip() for k in DEFAULT.split(",")])
-        apply_now()
         return info
     key = info.partition(":")[2]
     if not key:
@@ -231,7 +245,6 @@ def act(retv, info):
     else:
         return info
     save(keys)
-    apply_now()
     return info
 
 
@@ -260,7 +273,14 @@ def launch():
     if THEME.exists():
         cmd += ["-theme", str(THEME)]
     cmd += zen.switch_args({4, 5, 6, 7})
-    os.execvp("rofi", cmd)
+    # the panel reloads once, when the menu closes: a reload at every step would
+    # blink the panel each time
+    before = chosen()
+    subprocess.run(cmd)
+    zen.settings.cache_clear()
+    if chosen() != before:
+        apply_now()
+    sys.exit(0)
 
 
 def main():
