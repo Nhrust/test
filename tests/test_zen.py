@@ -1324,7 +1324,7 @@ class TestLiveInstall(unittest.TestCase):
         env = dict(os.environ, ZEN_DISK="/dev/nvme0n1", ZEN_HOST="vmtest", ZEN_USER_NAME="tref",
                    ZEN_USER_PASSWORD="user-secret", ZEN_ROOT_PASSWORD="root-secret",
                    ZEN_LUKS_PASSPHRASE="luks-secret-phrase", ZEN_TIMEZONE="Europe/Moscow",
-                   ZEN_LOCALE="en_US.UTF-8", ZEN_KEYMAP="us", ZEN_SWAP="4G")
+                   ZEN_LOCALE="en_US.UTF-8", ZEN_KEYMAP="us", ZEN_ESP_SIZE="8G", ZEN_SWAP="4G")
         res = subprocess.run([str(REPO / "tools/live-install"), "--dry-run"], env=env, input="",
                              capture_output=True, text=True)
         self.assertEqual(res.returncode, 0, res.stderr)
@@ -1332,7 +1332,10 @@ class TestLiveInstall(unittest.TestCase):
         for line in ("mkfs.fat -F 32 /dev/nvme0n1p1",
                      "cryptsetup luksFormat --type luks2 --batch-mode --key-file=- /dev/nvme0n1p2",
                      "lvcreate -L 4G -n swap vg0",
-                     "mount -o subvol=@home,compress=zstd:3 /dev/vg0/root /mnt/home",
+                     "mount --mkdir -o subvol=@home,compress=zstd:3,noatime /dev/vg0/root /mnt/home",
+                     "mv /btrfs-top/@/.snapshots /btrfs-top/@snapshots",
+                     "sgdisk -n 1:0:+8G -t 1:ef00 -c 1:EFI /dev/nvme0n1",
+                     "ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf",
                      "rd.luks.name=<uuid of /dev/nvme0n1p2>=cryptlvm rd.lvm.lv=vg0/root rd.lvm.lv=vg0/swap",
                      "mkinitcpio -P",
                      "efibootmgr --create --disk /dev/nvme0n1 --part 1",

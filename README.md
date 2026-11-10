@@ -77,9 +77,9 @@ back.
 
 ## Try it in a virtual machine
 
-`tools/live-install` repeats the install guide on an empty disk (UEFI; GPT, 1 GiB
-ESP; LUKS2 → LVM → Btrfs with `@` and `@home`; `linux` and `linux-lts` as UKIs;
-Limine) and puts this repository in the new user's home with a `hosts/<name>`
+`tools/live-install` repeats the install guide on an empty disk (UEFI; GPT, 8 GiB
+ESP; LUKS2 → LVM → Btrfs with `@`, `@home`, `@var_log`, `@var_cache`, `@snapshots`;
+Snapper, zram, NetworkManager with systemd-resolved; `linux` and `linux-lts` as UKIs; Limine) and puts this repository in the new user's home with a `hosts/<name>`
 made for that machine. It asks for the disk, host name, user, passwords, time
 zone and locale; `--dry-run` prints every step and changes nothing. **It erases
 the disk you choose**: use a virtual machine (UEFI firmware, 40 GB disk, 4 GB RAM or more).

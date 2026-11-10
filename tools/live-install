@@ -4,10 +4,11 @@
 #
 #   tools/live-install [--dry-run]
 #
-# It follows the install guide step by step (UEFI; GPT with a 1 GiB ESP; LUKS2
-# → LVM (swap + root) → Btrfs with the subvolumes @ and @home, compress=zstd:3;
-# linux and linux-lts as unified kernel images on the ESP; Limine as the boot
-# loader) and asks for what is personal: the disk, host name, user, passwords,
+# It follows the install guide and the author's laptop step by step (UEFI; GPT
+# with an 8 GiB ESP; LUKS2 → LVM (swap + root) → Btrfs with the subvolumes @,
+# @home, @var_log, @var_cache and @snapshots, compress=zstd:3,noatime; Snapper
+# set up before fstab; zram; NetworkManager with systemd-resolved; linux and
+# linux-lts as unified kernel images on the ESP; Limine as the boot loader) and asks for what is personal: the disk, host name, user, passwords,
 # time zone, locale. Passwords are read without echo and never put on a command
 # line. Everything it does is printed first with --dry-run.
 #
@@ -17,7 +18,7 @@
 #
 # Answers can also come from the environment (ZEN_DISK, ZEN_CONFIRM, ZEN_HOST,
 # ZEN_USER_NAME, ZEN_USER_PASSWORD, ZEN_ROOT_PASSWORD, ZEN_LUKS_PASSPHRASE,
-# ZEN_TIMEZONE, ZEN_LOCALE, ZEN_KEYMAP, ZEN_SWAP) for a test run.
+# ZEN_TIMEZONE, ZEN_LOCALE, ZEN_KEYMAP, ZEN_ESP_SIZE, ZEN_SWAP) for a test run.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -85,7 +86,7 @@ if [ -z "$DRY" ]; then
 	[ "$(id -u)" = 0 ] || die "run as root (the live ISO gives a root shell)"
 	[ "$(cat /sys/firmware/efi/fw_platform_size 2>/dev/null)" = 64 ] || die "not booted in 64-bit UEFI mode"
 	ping -c 1 -W 3 archlinux.org >/dev/null 2>&1 || die "no network: connect first (ip link, iwctl)"
-	for tool in sfdisk cryptsetup pvcreate mkfs.btrfs mkfs.fat pacstrap genfstab arch-chroot efibootmgr; do
+	for tool in sgdisk cryptsetup pvcreate mkfs.btrfs mkfs.fat pacstrap genfstab arch-chroot efibootmgr; do
 		command -v "$tool" >/dev/null || die "$tool is missing in this live environment"
 	done
 	timedatectl set-ntp true
@@ -115,8 +116,14 @@ ask LOCALE "System language (LANG)" en_US.UTF-8
 printf '%s' "$LOCALE" | grep -Eq '^[a-z]{2,3}_[A-Z]{2}\.UTF-8$' || die "LANG looks like en_US.UTF-8"
 ask KEYMAP "Console keymap" us
 printf '%s' "$KEYMAP" | grep -Eq '^[A-Za-z0-9_.-]+$' || die "keymap name"
-ask SWAP "Swap (hibernation) size, as RAM size or more, e.g. 4G" 4G
-printf '%s' "$SWAP" | grep -Eq '^[0-9]+[MG]$' || die "size like 4G"
+ask ESP_SIZE "EFI partition size (holds the loader and both kernel images)" 8G
+printf '%s' "$ESP_SIZE" | grep -Eq '^[0-9]+[MG]$' || die "size like 8G"
+# swap for hibernation: twice the RAM as on the author's laptop (16 GiB RAM, 32 GiB swap), at most 32 GiB
+RAM_G=$(awk '/^MemTotal:/ { printf "%d", $2 / 1048576 + 0.5 }' /proc/meminfo 2>/dev/null || true)
+RAM_G=${RAM_G:-4}
+SWAP_DEFAULT=$(( RAM_G * 2 > 32 ? 32 : (RAM_G * 2 < 2 ? 2 : RAM_G * 2) ))G
+ask SWAP "Swap size for hibernation, at least the RAM size" "$SWAP_DEFAULT"
+printf '%s' "$SWAP" | grep -Eq '^[0-9]+[MG]$' || die "size like 8G"
 
 case $(grep -m1 vendor_id /proc/cpuinfo 2>/dev/null) in
 	*AuthenticAMD*) UCODE=amd-ucode ;;
@@ -128,7 +135,8 @@ ESP=$(part 1)
 CRYPT=$(part 2)
 say
 say "Plan:"
-say "  disk        $DISK  (ERASED: $ESP ESP 1 GiB, $CRYPT LUKS2 → LVM vg0 → swap $SWAP + root, Btrfs @ and @home)"
+say "  disk        $DISK  (ERASED: $ESP ESP $ESP_SIZE, $CRYPT LUKS2 → LVM vg0 → swap $SWAP + root)"
+say "  Btrfs       @ @home @var_log @var_cache @snapshots, compress=zstd:3,noatime; Snapper before fstab"
 say "  host/user   $HOST / $USER_NAME"
 say "  time/locale $TIMEZONE, $LOCALE, console keymap $KEYMAP"
 say "  microcode   ${UCODE:-none (CPU not recognised)}"
@@ -149,13 +157,11 @@ if [ -z "$DRY" ]; then
 fi
 
 say "== partitions"
-if [ -n "$DRY" ]; then
-	say "+ sfdisk --wipe always --wipe-partitions always $DISK  (label gpt; 1GiB EFI System; rest Linux)"
-else
-	printf 'label: gpt\n,1GiB,U\n,,L\n' | sfdisk --wipe always --wipe-partitions always "$DISK"
-	partprobe "$DISK"
-	udevadm settle
-fi
+run sgdisk --zap-all "$DISK"
+run sgdisk -n "1:0:+$ESP_SIZE" -t 1:ef00 -c 1:EFI "$DISK"
+run sgdisk -n 2:0:0 -t 2:8309 -c 2:Linux-LUKS "$DISK"
+run partprobe "$DISK"
+run udevadm settle
 
 say "== encryption, LVM, Btrfs"
 run mkfs.fat -F 32 "$ESP"
@@ -165,26 +171,48 @@ run pvcreate /dev/mapper/cryptlvm
 run vgcreate vg0 /dev/mapper/cryptlvm
 run lvcreate -L "$SWAP" -n swap vg0
 run lvcreate -l 100%FREE -n root vg0
-run mkfs.btrfs /dev/vg0/root
+run mkfs.btrfs -L archroot /dev/vg0/root
 run mkswap /dev/vg0/swap
 run swapon --priority 10 /dev/vg0/swap
 run mount /dev/vg0/root /mnt
-run btrfs subvolume create /mnt/@
-run btrfs subvolume create /mnt/@home
+for sub in @ @home @var_log @var_cache; do
+	run btrfs subvolume create "/mnt/$sub"
+done
 run umount /mnt
-run mount -o subvol=@,compress=zstd:3 /dev/vg0/root /mnt
-run mkdir -p /mnt/home /mnt/efi
-run mount -o subvol=@home,compress=zstd:3 /dev/vg0/root /mnt/home
-run mount "$ESP" /mnt/efi
+BTRFS=compress=zstd:3,noatime
+run mount -o "subvol=@,$BTRFS" /dev/vg0/root /mnt
+run mount --mkdir -o "subvol=@home,$BTRFS" /dev/vg0/root /mnt/home
+run mount --mkdir -o "subvol=@var_log,$BTRFS" /dev/vg0/root /mnt/var/log
+run mount --mkdir -o "subvol=@var_cache,$BTRFS" /dev/vg0/root /mnt/var/cache
+run mount --mkdir "$ESP" /mnt/efi
 
 say "== packages"
+# snap-pac comes later (deploy.sh): its pacman hook fails in the installer's chroot
 # shellcheck disable=SC2086
-run pacstrap -K /mnt base linux linux-lts linux-firmware $UCODE cryptsetup lvm2 btrfs-progs dosfstools efibootmgr limine \
-	networkmanager sudo neovim man-db man-pages git terminus-font
+run pacstrap -K /mnt base linux linux-lts linux-firmware $UCODE mkinitcpio btrfs-progs cryptsetup lvm2 limine \
+	efibootmgr dosfstools networkmanager sudo neovim git base-devel man-db man-pages snapper zram-generator terminus-font
+
+say "== Snapper, before fstab"
+# the config makes the .snapshots subvolume inside @; it becomes the neighbour @snapshots
+in_chroot <<EOF
+snapper --no-dbus -c root create-config /
+EOF
+run mkdir -p /btrfs-top
+run mount -o subvolid=5 /dev/vg0/root /btrfs-top
+run mv /btrfs-top/@/.snapshots /btrfs-top/@snapshots
+run umount /btrfs-top
+run rmdir /btrfs-top
+run mkdir /mnt/.snapshots
+run mount -o "subvol=@snapshots,$BTRFS" /dev/vg0/root /mnt/.snapshots
+run chmod 750 /mnt/.snapshots
+
+say "== fstab"
 if [ -n "$DRY" ]; then
-	say "+ genfstab -U /mnt >> /mnt/etc/fstab"
+	say "+ genfstab -U /mnt > /mnt/etc/fstab  (swap gets pri=10)"
 else
-	genfstab -U /mnt >> /mnt/etc/fstab
+	genfstab -U /mnt > /mnt/etc/fstab
+	sed -i -E '/^[^#].*[[:space:]]swap[[:space:]]/ { /pri=/! s/defaults/defaults,pri=10/ }' /mnt/etc/fstab
+	cat /mnt/etc/fstab
 fi
 
 # ------------------------------------------------------------------ system
@@ -215,6 +243,8 @@ for preset in linux linux-lts; do
 	put "/mnt/etc/mkinitcpio.d/$preset.preset" < "$ROOT/etc/mkinitcpio.d/$preset.preset"
 done
 put /mnt/etc/pacman.d/hooks/99-limine-efi.hook < "$ROOT/etc/pacman.d/hooks/99-limine-efi.hook"
+put /mnt/etc/systemd/zram-generator.conf < "$ROOT/etc/systemd/zram-generator.conf"
+put /mnt/etc/NetworkManager/conf.d/dns.conf < "$ROOT/etc/NetworkManager/conf.d/dns.conf"
 # a plain menu: "zen apply" in deploy.sh renders the coloured one over it
 put /mnt/efi/limine.conf <<EOF
 timeout: 5
@@ -239,10 +269,11 @@ locale-gen
 sed -i -E 's/^# (%wheel ALL=\(ALL:ALL\) ALL)\$/\1/' /etc/sudoers
 visudo -cf /etc/sudoers
 useradd -m -G wheel -s /bin/bash "$USER_NAME"
-systemctl enable NetworkManager.service systemd-timesyncd.service
+systemctl enable NetworkManager.service systemd-resolved.service systemd-timesyncd.service snapper-timeline.timer snapper-cleanup.timer
 mkdir -p /efi/EFI/Linux /efi/EFI/arch-limine /efi/EFI/BOOT
 mkinitcpio -P
 install -Dm644 /usr/share/limine/BOOTX64.EFI /efi/EFI/arch-limine/BOOTX64.EFI
+snapper --no-dbus -c root create --description "Initial configured system"
 EOF
 # Limine's own fallback path, for firmware (and virtual machines) that forget the NVRAM entry
 run install -Dm644 /mnt/usr/share/limine/BOOTX64.EFI /mnt/efi/EFI/BOOT/BOOTX64.EFI
@@ -281,6 +312,8 @@ EOF
 
 # ------------------------------------------------------------------ finish
 say "== finish"
+# last: arch-chroot would bind the live system's resolv.conf over a link made earlier
+run ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 run swapoff /dev/vg0/swap
 run umount -R /mnt
 run vgchange -an vg0
