@@ -538,9 +538,9 @@ def hotspot_start():
         clear_caches()
         hs_apply(hs_settings())
         panel()
-    notify(ok, _("Hotspot on: {}").format(ssid_of(c["uuid"])) if ok else _("Could not start the hotspot"),
-           "" if ok else last_line(res))
+    # it worked: the menu and the panel show it; only a failure is told
     if not ok:
+        notify(False, _("Could not start the hotspot"), last_line(res))
         run("systemctl", "stop", f"{HOTSPOT}.service")
 
 
@@ -553,7 +553,6 @@ def hotspot_stop():
     run("nmcli", "connection", "down", "id", HOTSPOT)
     run("systemctl", "stop", f"{HOTSPOT}.service")
     panel()
-    notify(True, _("Hotspot off"))
 
 
 def rename_hotspot(uuid):
@@ -688,7 +687,8 @@ def change_password(uuid):
     if not password:
         return
     ok = set_password(uuid, password)
-    notify(ok, _("Password changed: {}").format(name) if ok else _("Could not change the password"))
+    if not ok:
+        notify(False, _("Could not change the password"))
     if ok and (connection(uuid) or {}).get("device"):
         run("nmcli", "connection", "up", "uuid", uuid)
 
@@ -1324,7 +1324,6 @@ def act(info, view, delta=1):
         return view, (f"unblock:{rest}" if kind == "block" else f"block:{rest}" if kind == "unblock" else None)
     if kind == "kick":
         guard("kick", rest)
-        notify(True, _("Disconnected: {}").format(next((d["name"] for d in stations() if d["mac"] == rest), rest)))
         return "hsdevs", None
     if kind == "copy":
         copy(rest)

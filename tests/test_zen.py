@@ -769,6 +769,8 @@ class TestNetwork(Zen):
         self.assertEqual(options["data"], "hotspot")
         self.menu("zen-network", LEFT, "adj:hotspot", "hotspot")
         self.assertTrue(self.wait_for(lambda st: ["ap0", "wifi"] not in st["nm"]["devices"]))
+        self.idle()
+        self.assertFalse(self.calls("notify-send"), "on and off show in the menu and the panel")
         self.assertEqual(self.conn("u-zen-hotspot")["device"], "")
 
     def hotspot_on(self, neigh=()):

@@ -706,8 +706,6 @@ msgstr "Это не адрес: {}"
 msgid "Now"
 msgstr "Сейчас"
 
-msgid "Password changed: {}"
-msgstr "Пароль изменён: {}"
 
 msgid "Password copied"
 msgstr "Пароль скопирован"
@@ -785,11 +783,7 @@ msgstr "без рекламы"
 msgid "Hotspot"
 msgstr "Точка доступа"
 
-msgid "Hotspot on: {}"
-msgstr "Точка доступа включена: {}"
 
-msgid "Hotspot off"
-msgstr "Точка доступа выключена"
 
 msgid "Could not create the hotspot"
 msgstr "Не удалось создать точку доступа"
