@@ -173,6 +173,9 @@ binds {
     Ctrl+Shift+Escape { spawn "foot" "btop"; }
     Mod+P { spawn-sh "~/.local/bin/zen-displays"; }
     Mod+M { spawn-sh "~/.local/bin/zen-audio"; }
+    Mod+Shift+M allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mute"; }
+    Mod+Ctrl+M  allow-when-locked=true { spawn-sh "~/.local/bin/zen-audio mic-mute"; }
+    Mod+K { spawn-sh "~/.local/bin/zen-displays caffeine toggle"; }
     Mod+N { spawn-sh "~/.local/bin/zen-network"; }
     Mod+Shift+A { spawn-sh "~/.local/bin/zen-center"; }
 
