@@ -1,0 +1,290 @@
+#!/bin/bash
+# live-install — install Arch Linux the way the zen stack expects it, from the
+# official live ISO, and put this repository in the new user's home.
+#
+#   tools/live-install [--dry-run]
+#
+# It follows the install guide step by step (UEFI; GPT with a 1 GiB ESP; LUKS2
+# → LVM (swap + root) → Btrfs with the subvolumes @ and @home, compress=zstd:3;
+# linux and linux-lts as unified kernel images on the ESP; Limine as the boot
+# loader) and asks for what is personal: the disk, host name, user, passwords,
+# time zone, locale. Passwords are read without echo and never put on a command
+# line. Everything it does is printed first with --dry-run.
+#
+# The disk you choose is erased. Use it in a virtual machine first.
+#
+# After the reboot: log in, then   cd ~/zen && ./deploy.sh --dry-run && ./deploy.sh
+#
+# Answers can also come from the environment (ZEN_DISK, ZEN_CONFIRM, ZEN_HOST,
+# ZEN_USER_NAME, ZEN_USER_PASSWORD, ZEN_ROOT_PASSWORD, ZEN_LUKS_PASSPHRASE,
+# ZEN_TIMEZONE, ZEN_LOCALE, ZEN_KEYMAP, ZEN_SWAP) for a test run.
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+DRY=
+case ${1:-} in
+	"") ;;
+	--dry-run) DRY=1 ;;
+	*) sed -n '2,20p' "$0"; exit 1 ;;
+esac
+
+say() { printf '%s\n' "$*"; }
+die() { printf 'live-install: %s\n' "$*" >&2; exit 1; }
+run() { say "+ $*"; [ -n "$DRY" ] || "$@"; }
+
+# the same, with a secret on standard input
+runp() {
+	secret=$1; shift
+	say "+ $* (secret on standard input)"
+	if [ -z "$DRY" ]; then printf '%s' "$secret" | "$@"; fi
+}
+
+# write a file of the new system from standard input
+put() {
+	if [ -n "$DRY" ]; then
+		say "+ write $1"; sed 's/^/    | /'
+	else
+		mkdir -p "$(dirname "$1")"; cat > "$1"
+	fi
+}
+
+# commands for the new system, from standard input
+in_chroot() {
+	if [ -n "$DRY" ]; then
+		say "+ arch-chroot /mnt /bin/bash -eu"; sed 's/^/    | /'
+	else
+		arch-chroot /mnt /bin/bash -eu
+	fi
+}
+
+ask() { # NAME "question" default
+	name=$1 question=$2 default=${3:-}
+	var=ZEN_$name
+	if [ -n "${!var:-}" ]; then printf -v "$name" '%s' "${!var}"; return; fi
+	read -r -p "$question${default:+ [$default]}: " answer || die "no answer (end of input)"
+	printf -v "$name" '%s' "${answer:-$default}"
+}
+
+ask_secret() { # NAME "question" minimum-length
+	name=$1 question=$2 min=${3:-1}
+	var=ZEN_$name
+	if [ -n "${!var:-}" ]; then printf -v "$name" '%s' "${!var}"; return; fi
+	while :; do
+		read -r -s -p "$question: " one; echo
+		read -r -s -p "again: " two; echo
+		if [ "$one" != "$two" ]; then say "not the same, once more"; continue; fi
+		if [ "${#one}" -lt "$min" ]; then say "at least $min characters"; continue; fi
+		printf -v "$name" '%s' "$one"; return
+	done
+}
+
+part() { case $DISK in *[0-9]) printf '%sp%s' "$DISK" "$1" ;; *) printf '%s%s' "$DISK" "$1" ;; esac; }
+
+# ------------------------------------------------------------------ checks
+if [ -z "$DRY" ]; then
+	[ "$(id -u)" = 0 ] || die "run as root (the live ISO gives a root shell)"
+	[ "$(cat /sys/firmware/efi/fw_platform_size 2>/dev/null)" = 64 ] || die "not booted in 64-bit UEFI mode"
+	ping -c 1 -W 3 archlinux.org >/dev/null 2>&1 || die "no network: connect first (ip link, iwctl)"
+	for tool in sfdisk cryptsetup pvcreate mkfs.btrfs mkfs.fat pacstrap genfstab arch-chroot efibootmgr; do
+		command -v "$tool" >/dev/null || die "$tool is missing in this live environment"
+	done
+	timedatectl set-ntp true
+fi
+[ -d "$ROOT/hosts/zen" ] || die "hosts/zen is missing: it is the example for the host files"
+
+# ------------------------------------------------------------------ questions
+say "Disks:"
+if command -v lsblk >/dev/null; then lsblk -dpno NAME,SIZE,MODEL,TRAN -e 7,11 || true; fi
+ask DISK "Disk to ERASE and install on (whole device, e.g. /dev/vda or /dev/nvme0n1)"
+if [ -z "$DRY" ]; then
+	[ -b "$DISK" ] || die "$DISK is not a block device"
+	[ "$(lsblk -dno TYPE "$DISK")" = disk ] || die "$DISK is not a whole disk"
+	if lsblk -no MOUNTPOINTS "$DISK" | grep -q .; then die "$DISK has mounted parts (the live medium?)"; fi
+fi
+ask HOST "Host name" zen-vm
+printf '%s' "$HOST" | grep -Eq '^[a-z0-9][a-z0-9-]{0,62}$' || die "host name: lowercase letters, digits, dashes"
+ask USER_NAME "User name" user
+printf '%s' "$USER_NAME" | grep -Eq '^[a-z_][a-z0-9_-]{0,31}$' || die "user name: lowercase letters, digits, - and _"
+[ "$USER_NAME" != root ] || die "choose a user other than root"
+ask_secret USER_PASSWORD "Password of $USER_NAME" 1
+ask_secret ROOT_PASSWORD "Password of root" 1
+ask_secret LUKS_PASSPHRASE "Disk encryption passphrase (asked at every boot)" 8
+ask TIMEZONE "Time zone" Europe/Moscow
+if [ -z "$DRY" ] && [ ! -e "/usr/share/zoneinfo/$TIMEZONE" ]; then die "unknown time zone $TIMEZONE"; fi
+ask LOCALE "System language (LANG)" en_US.UTF-8
+printf '%s' "$LOCALE" | grep -Eq '^[a-z]{2,3}_[A-Z]{2}\.UTF-8$' || die "LANG looks like en_US.UTF-8"
+ask KEYMAP "Console keymap" us
+printf '%s' "$KEYMAP" | grep -Eq '^[A-Za-z0-9_.-]+$' || die "keymap name"
+ask SWAP "Swap (hibernation) size, as RAM size or more, e.g. 4G" 4G
+printf '%s' "$SWAP" | grep -Eq '^[0-9]+[MG]$' || die "size like 4G"
+
+case $(grep -m1 vendor_id /proc/cpuinfo 2>/dev/null) in
+	*AuthenticAMD*) UCODE=amd-ucode ;;
+	*GenuineIntel*) UCODE=intel-ucode ;;
+	*) UCODE= ;;
+esac
+
+ESP=$(part 1)
+CRYPT=$(part 2)
+say
+say "Plan:"
+say "  disk        $DISK  (ERASED: $ESP ESP 1 GiB, $CRYPT LUKS2 → LVM vg0 → swap $SWAP + root, Btrfs @ and @home)"
+say "  host/user   $HOST / $USER_NAME"
+say "  time/locale $TIMEZONE, $LOCALE, console keymap $KEYMAP"
+say "  microcode   ${UCODE:-none (CPU not recognised)}"
+say "  boot        Limine, linux and linux-lts as unified kernel images on the ESP"
+if [ -z "$DRY" ]; then
+	lsblk -o NAME,SIZE,MODEL,TYPE,FSTYPE "$DISK"
+	ask CONFIRM "Type the disk name again ($DISK) to erase it"
+	[ "$CONFIRM" = "$DISK" ] || die "not confirmed, nothing was changed"
+fi
+
+# ------------------------------------------------------------------ disk
+# a previous attempt may have left things open
+if [ -z "$DRY" ]; then
+	swapoff /dev/vg0/swap 2>/dev/null || true
+	umount -R /mnt 2>/dev/null || true
+	vgchange -an vg0 >/dev/null 2>&1 || true
+	cryptsetup close cryptlvm 2>/dev/null || true
+fi
+
+say "== partitions"
+if [ -n "$DRY" ]; then
+	say "+ sfdisk --wipe always --wipe-partitions always $DISK  (label gpt; 1GiB EFI System; rest Linux)"
+else
+	printf 'label: gpt\n,1GiB,U\n,,L\n' | sfdisk --wipe always --wipe-partitions always "$DISK"
+	partprobe "$DISK"
+	udevadm settle
+fi
+
+say "== encryption, LVM, Btrfs"
+run mkfs.fat -F 32 "$ESP"
+runp "$LUKS_PASSPHRASE" cryptsetup luksFormat --type luks2 --batch-mode --key-file=- "$CRYPT"
+runp "$LUKS_PASSPHRASE" cryptsetup open --key-file=- "$CRYPT" cryptlvm
+run pvcreate /dev/mapper/cryptlvm
+run vgcreate vg0 /dev/mapper/cryptlvm
+run lvcreate -L "$SWAP" -n swap vg0
+run lvcreate -l 100%FREE -n root vg0
+run mkfs.btrfs /dev/vg0/root
+run mkswap /dev/vg0/swap
+run swapon --priority 10 /dev/vg0/swap
+run mount /dev/vg0/root /mnt
+run btrfs subvolume create /mnt/@
+run btrfs subvolume create /mnt/@home
+run umount /mnt
+run mount -o subvol=@,compress=zstd:3 /dev/vg0/root /mnt
+run mkdir -p /mnt/home /mnt/efi
+run mount -o subvol=@home,compress=zstd:3 /dev/vg0/root /mnt/home
+run mount "$ESP" /mnt/efi
+
+say "== packages"
+# shellcheck disable=SC2086
+run pacstrap -K /mnt base linux linux-lts linux-firmware $UCODE cryptsetup lvm2 btrfs-progs dosfstools efibootmgr limine \
+	networkmanager sudo neovim man-db man-pages git terminus-font
+if [ -n "$DRY" ]; then
+	say "+ genfstab -U /mnt >> /mnt/etc/fstab"
+else
+	genfstab -U /mnt >> /mnt/etc/fstab
+fi
+
+# ------------------------------------------------------------------ system
+say "== configuration"
+if [ -n "$DRY" ]; then LUKS_UUID="<uuid of $CRYPT>"; else LUKS_UUID=$(cryptsetup luksUUID "$CRYPT"); fi
+
+printf '%s\n' "$HOST" | put /mnt/etc/hostname
+put /mnt/etc/hosts <<EOF
+127.0.0.1        localhost
+::1              localhost
+127.0.0.1        $HOST.localdomain $HOST
+EOF
+put /mnt/etc/vconsole.conf <<EOF
+KEYMAP=$KEYMAP
+FONT=ter-v20n
+EOF
+printf 'LANG=%s\n' "$LOCALE" | put /mnt/etc/locale.conf
+put /mnt/etc/kernel/cmdline <<EOF
+rd.luks.name=$LUKS_UUID=cryptlvm rd.lvm.lv=vg0/root rd.lvm.lv=vg0/swap root=/dev/vg0/root rootflags=subvol=/@ rw resume=/dev/vg0/swap quiet loglevel=3 systemd.show_status=error rd.systemd.show_status=error rd.udev.log_level=3
+EOF
+put /mnt/etc/mkinitcpio.conf <<EOF
+MODULES=()
+BINARIES=()
+FILES=()
+HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt lvm2 filesystems fsck)
+EOF
+for preset in linux linux-lts; do
+	put "/mnt/etc/mkinitcpio.d/$preset.preset" < "$ROOT/etc/mkinitcpio.d/$preset.preset"
+done
+put /mnt/etc/pacman.d/hooks/99-limine-efi.hook < "$ROOT/etc/pacman.d/hooks/99-limine-efi.hook"
+# a plain menu: "zen apply" in deploy.sh renders the coloured one over it
+put /mnt/efi/limine.conf <<EOF
+timeout: 5
+default_entry: 1
+editor_enabled: no
+
+/Arch Linux
+    protocol: efi
+    path: boot():/EFI/Linux/arch-linux.efi
+
+/Arch Linux LTS
+    protocol: efi
+    path: boot():/EFI/Linux/arch-linux-lts.efi
+EOF
+
+in_chroot <<EOF
+ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+hwclock --systohc
+sed -i -E 's/^#(en_US\.UTF-8 UTF-8)/\1/; s/^#(ru_RU\.UTF-8 UTF-8)/\1/' /etc/locale.gen
+grep -q '^$LOCALE UTF-8' /etc/locale.gen || sed -i -E 's/^#($LOCALE UTF-8)/\1/' /etc/locale.gen
+locale-gen
+sed -i -E 's/^# (%wheel ALL=\(ALL:ALL\) ALL)\$/\1/' /etc/sudoers
+visudo -cf /etc/sudoers
+useradd -m -G wheel -s /bin/bash "$USER_NAME"
+systemctl enable NetworkManager.service systemd-timesyncd.service
+mkdir -p /efi/EFI/Linux /efi/EFI/arch-limine /efi/EFI/BOOT
+mkinitcpio -P
+install -Dm644 /usr/share/limine/BOOTX64.EFI /efi/EFI/arch-limine/BOOTX64.EFI
+EOF
+# Limine's own fallback path, for firmware (and virtual machines) that forget the NVRAM entry
+run install -Dm644 /mnt/usr/share/limine/BOOTX64.EFI /mnt/efi/EFI/BOOT/BOOTX64.EFI
+run efibootmgr --create --disk "$DISK" --part 1 --label "Arch Linux (Limine)" --loader '\EFI\arch-limine\BOOTX64.EFI' --unicode
+
+say "== passwords"
+if [ -n "$DRY" ]; then
+	say "+ chpasswd for root and $USER_NAME (from standard input)"
+else
+	printf 'root:%s\n%s:%s\n' "$ROOT_PASSWORD" "$USER_NAME" "$USER_PASSWORD" | arch-chroot /mnt chpasswd
+fi
+
+# ------------------------------------------------------------------ the repository
+say "== repository → /home/$USER_NAME/zen"
+TARGET=/mnt/home/$USER_NAME/zen
+run mkdir -p "$TARGET"
+if [ -n "$DRY" ]; then
+	say "+ copy $ROOT to $TARGET (without __pycache__)"
+else
+	tar -C "$ROOT" --exclude='__pycache__' -cf - . | tar -C "$TARGET" -xf -
+fi
+# hosts/<name> for this machine: hosts/zen is the author's laptop and keeps its own boot parameters
+HOSTDIR=$TARGET/hosts/$HOST
+run rm -rf "$HOSTDIR"
+run mkdir -p "$HOSTDIR/etc/kernel" "$HOSTDIR/etc/conf.d" "$HOSTDIR/etc/snapper/configs" "$HOSTDIR/home/.config/zen"
+for f in etc/conf.d/snapper etc/snapper/configs/root home/.config/zen/zen.conf system-services.txt; do
+	run cp "$ROOT/hosts/zen/$f" "$HOSTDIR/$f"
+done
+run cp /mnt/etc/hosts "$HOSTDIR/etc/hosts"
+run cp /mnt/etc/kernel/cmdline "$HOSTDIR/etc/kernel/cmdline"
+run cp /mnt/etc/mkinitcpio.conf "$HOSTDIR/etc/mkinitcpio.conf"
+printf 'snapper\nsnap-pac\n%s\n' "$UCODE" | sed '/^$/d' | put "$HOSTDIR/packages.txt"
+in_chroot <<EOF
+chown -R "$USER_NAME:$USER_NAME" "/home/$USER_NAME/zen"
+EOF
+
+# ------------------------------------------------------------------ finish
+say "== finish"
+run swapoff /dev/vg0/swap
+run umount -R /mnt
+run vgchange -an vg0
+run cryptsetup close cryptlvm
+say
+say "Done. Reboot (poweroff, remove the ISO), enter the disk passphrase, log in as $USER_NAME, then:"
+say "  cd ~/zen; ./deploy.sh --dry-run; ./deploy.sh"

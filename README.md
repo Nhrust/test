@@ -75,6 +75,26 @@ something, edit it in the repository and run `./deploy.sh --no-packages`;
 `zen diff` lists what was changed on the system since, so it can be carried
 back.
 
+## Try it in a virtual machine
+
+`tools/live-install` repeats the install guide on an empty disk (UEFI; GPT, 1 GiB
+ESP; LUKS2 → LVM → Btrfs with `@` and `@home`; `linux` and `linux-lts` as UKIs;
+Limine) and puts this repository in the new user's home with a `hosts/<name>`
+made for that machine. It asks for the disk, host name, user, passwords, time
+zone and locale; `--dry-run` prints every step and changes nothing. **It erases
+the disk you choose**: use a virtual machine (UEFI firmware, 40 GB disk, 4 GB RAM or more).
+
+From the live ISO, with the network up:
+
+```sh
+curl -O http://HOST:8000/zen-repo.tar.gz   # on HOST: python3 -m http.server
+tar xzf zen-repo.tar.gz && cd zen-repo
+tools/live-install --dry-run
+tools/live-install
+```
+
+After the reboot, log in and run `cd ~/zen && ./deploy.sh`.
+
 ## Tests
 
 `tests/run` checks the menus, the panel modules, `zen apply` and a dry run of

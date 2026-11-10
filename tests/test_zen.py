@@ -1317,6 +1317,38 @@ class TestAutowidth(unittest.TestCase):
         self.assertEqual(self.sent, [])
 
 
+class TestLiveInstall(unittest.TestCase):
+    """tools/live-install: the whole plan is printed by --dry-run, secrets never are."""
+
+    def test_dry_run(self):
+        env = dict(os.environ, ZEN_DISK="/dev/nvme0n1", ZEN_HOST="vmtest", ZEN_USER_NAME="tref",
+                   ZEN_USER_PASSWORD="user-secret", ZEN_ROOT_PASSWORD="root-secret",
+                   ZEN_LUKS_PASSPHRASE="luks-secret-phrase", ZEN_TIMEZONE="Europe/Moscow",
+                   ZEN_LOCALE="en_US.UTF-8", ZEN_KEYMAP="us", ZEN_SWAP="4G")
+        res = subprocess.run([str(REPO / "tools/live-install"), "--dry-run"], env=env, input="",
+                             capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        out = res.stdout
+        for line in ("mkfs.fat -F 32 /dev/nvme0n1p1",
+                     "cryptsetup luksFormat --type luks2 --batch-mode --key-file=- /dev/nvme0n1p2",
+                     "lvcreate -L 4G -n swap vg0",
+                     "mount -o subvol=@home,compress=zstd:3 /dev/vg0/root /mnt/home",
+                     "rd.luks.name=<uuid of /dev/nvme0n1p2>=cryptlvm rd.lvm.lv=vg0/root rd.lvm.lv=vg0/swap",
+                     "mkinitcpio -P",
+                     "efibootmgr --create --disk /dev/nvme0n1 --part 1",
+                     "hosts/vmtest/etc/kernel/cmdline"):
+            self.assertIn(line, out)
+        for secret in ("user-secret", "root-secret", "luks-secret-phrase"):
+            self.assertNotIn(secret, out + res.stderr)
+
+    def test_refuses_bad_names(self):
+        env = dict(os.environ, ZEN_DISK="/dev/vda", ZEN_HOST="Bad Name")
+        res = subprocess.run([str(REPO / "tools/live-install"), "--dry-run"], env=env, input="",
+                             capture_output=True, text=True)
+        self.assertNotEqual(res.returncode, 0)
+        self.assertIn("host name", res.stderr)
+
+
 class TestConfigs(Zen):
 
     def test_waybar_paths(self):
