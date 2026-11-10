@@ -136,7 +136,10 @@ def show_pair():
         focused = json.loads(res.stdout)
     except ValueError:
         return
-    if not focused or focused["id"] not in partner:
+    if not focused:
+        return
+    if focused["id"] not in partner:
+        show_half_neighbour(focused["id"])
         return
     niri("action", "focus-window", "--id", str(partner[focused["id"]]))
     niri("action", "focus-window", "--id", str(focused["id"]))
@@ -152,6 +155,36 @@ def reveal(win_id):
         mates = [m for m in column_windows(w["workspace_id"], col) if m["id"] != win_id]
         if mates:
             niri("action", "focus-window", "--id", str(mates[0]["id"]))
+            niri("action", "focus-window", "--id", str(win_id))
+            return
+
+
+def show_half_neighbour(win_id):
+    """A half-width column next to another half-width one (stacks are not in `partner`):
+    bring both into view. Reads the layout anew, the cache is a step behind after a close."""
+    try:
+        live = json.loads(niri("--json", "windows").stdout)
+    except ValueError:
+        return
+    width = output_width()
+    cols = {}
+    me = None
+    for w in live:
+        pos = (w.get("layout") or {}).get("pos_in_scrolling_layout")
+        if not pos or w.get("is_floating"):
+            continue
+        if w["id"] == win_id:
+            me = w
+        cols.setdefault((w["workspace_id"], pos[0]), []).append(w)
+    if not me or not width or is_fullscreen(me):
+        return
+    ws, col = me["workspace_id"], me["layout"]["pos_in_scrolling_layout"][0]
+    if me["layout"]["tile_size"][0] >= FULL * width:
+        return
+    for c in (col - 1, col + 1):
+        group = cols.get((ws, c))
+        if group and group[0]["layout"]["tile_size"][0] < FULL * width and not is_fullscreen(group[0]):
+            niri("action", "focus-window", "--id", str(group[0]["id"]))
             niri("action", "focus-window", "--id", str(win_id))
             return
 

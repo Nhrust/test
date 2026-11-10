@@ -1280,6 +1280,20 @@ class TestAutowidth(unittest.TestCase):
                                      "action set-window-width --id 3 100%",
                                      "action focus-window --id 2", "action focus-window --id 3"])
 
+    def test_closing_a_full_window_shows_the_whole_pair(self):
+        # a stack on the left, one window on the right; the full-screen window on top is closed
+        live = [{"id": 1, "workspace_id": 1, "layout": {"pos_in_scrolling_layout": [1, 1], "tile_size": [960, 600]}},
+                {"id": 2, "workspace_id": 1, "layout": {"pos_in_scrolling_layout": [1, 2], "tile_size": [960, 600]}},
+                {"id": 3, "workspace_id": 1, "layout": {"pos_in_scrolling_layout": [2, 1], "tile_size": [960, 1200]}}]
+
+        def fake(*a):
+            self.sent.append(" ".join(a))
+            out = json.dumps(live) if a[:2] == ("--json", "windows") else json.dumps({"id": 3})
+            return subprocess.CompletedProcess(a, 0, out, "")
+        self.m.niri = fake
+        self.m.on_closed(4, user_closed=True)
+        self.assertEqual(self.sent[-2:], ["action focus-window --id 1", "action focus-window --id 3"])
+
     def test_closing_a_window_does_not_restore(self):
         self.win(2, 1)
         c = self.win(3, 1, 2)
