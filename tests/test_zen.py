@@ -1212,18 +1212,26 @@ class TestAutowidth(unittest.TestCase):
     def test_new_window_next_to_a_stack_takes_the_other_half(self):
         self.win(1, 1)
         self.win(2, 1, 2)
-        new = self.win(3, 2)
-        self.m.on_new_window(new)
+        self.m.on_new_window(self.win(3, 2))
         self.assertEqual(self.sent, ["action set-window-width --id 3 50%"])
-        self.assertEqual(self.m.stack_partner[3], [1, 2])
+        # closing it leaves the stack as it is
+        self.sent.clear()
         self.m.on_closed(3)
-        self.assertIn("action set-window-width --id 1 100%", self.sent)
+        self.assertEqual(self.sent, [])
 
     def test_pair_with_a_stack_is_complete(self):
+        # stack on the left, one window on the right (no partner recorded): the next one is full screen
+        self.win(1, 1)
+        self.win(2, 1, 2)
+        self.win(3, 2)
+        self.m.on_new_window(self.win(4, 3))
+        self.assertEqual(self.sent, ["action set-window-width --id 4 100%"])
+        self.sent.clear()
+        # the same with the stack on the right
+        self.m.windows.clear()
         self.win(1, 1)
         self.win(2, 2)
         self.win(3, 2, 2)
-        self.m.partner.update({1: 2, 2: 1})
         self.m.on_new_window(self.win(4, 3))
         self.assertEqual(self.sent, ["action set-window-width --id 4 100%"])
 
