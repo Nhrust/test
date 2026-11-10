@@ -1,0 +1,5 @@
+#!/bin/sh
+# date — the date and time on the panel, in the language of zen.conf
+# ([general] locale), like the rest of the zen scripts: "Вт 10 ноя  10:16:00".
+. "$HOME/.local/lib/zen/zen.sh"
+date '+%a %-d %b  %H:%M:%S' | sed -E 's/^(\S+ \S+ )(\S+)/\1\L\2/'

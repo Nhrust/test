@@ -117,7 +117,7 @@
         "on-click": "~/.local/bin/zen-center",
         "on-click-right": "~/.local/bin/zen-center dnd toggle",
         "on-click-middle": "~/.local/bin/zen-center clear",
-        "exec": "date '+%a %-d %b  %H:%M:%S' | sed -E 's/^(\\S+ \\S+ )(\\S+)/\\1\\L\\2/'",
+        "exec": "~/.local/lib/zen/bar/date",
         "interval": 1,
         "tooltip": false
     },

@@ -39,6 +39,7 @@ SELF = os.path.realpath(sys.argv[0])
 THEME = zen.CONFIG_HOME / "rofi/network.rasi"
 PAL = zen.palette()
 BUSY = zen.RUNTIME / "zen-network-busy"
+COPIED = zen.RUNTIME / "zen-network-copied"  # the row just copied, marked until the next step
 VIEW = zen.RUNTIME / "zen-network-view"  # the view on screen, for the refresh after background work
 
 INIT, SELECT, ESC, LEFT, RIGHT = 0, 1, 12, 13, 14
@@ -597,6 +598,14 @@ def exit_node(ts):
 
 # ---------------------------------------------------------------- background work and prompts
 
+@functools.lru_cache(maxsize=None)
+def copied():
+    try:
+        return COPIED.read_text()
+    except OSError:
+        return None
+
+
 def busy():
     """What the background work is busy with; a mark older than NetworkManager's own
     time limit for connecting was left by work that died, and means nothing."""
@@ -650,9 +659,9 @@ def wifi_connect(ssid, password, hidden=False):
 
 
 def report(res, name):
-    ok = res.returncode == 0
-    notify(ok, (_("Connected: {}") if ok else _("Could not connect: {}")).format(name),
-           "" if ok else last_line(res))
+    """Only a failure is told: a connection shows on the panel and in the menu."""
+    if res.returncode != 0:
+        notify(False, _("Could not connect: {}").format(name), last_line(res))
 
 
 def qr_text(uuid, password):
@@ -862,6 +871,8 @@ class Menu:
 
     def add(self, text, info, active=False, passive=False):
         # a row with nothing to do cannot be selected; the arrows skip it
+        if info == copied():
+            text += " · " + esc(_("copied"))
         self.rows.append((text, info, active, passive or info == "none"))
 
     def back(self, to="view:main"):
@@ -1327,7 +1338,7 @@ def act(info, view, delta=1):
         return "hsdevs", None
     if kind == "copy":
         copy(rest)
-        notify(True, _("Copied: {}").format(rest))
+        COPIED.write_text(info)
         return view, info
     if kind == "copypw":
         password = secret(rest)
@@ -1335,7 +1346,7 @@ def act(info, view, delta=1):
             notify(False, _("NetworkManager did not give the password"))
         else:
             copy(password, sensitive=True)
-            notify(True, _("Password copied"))
+            COPIED.write_text(info)
         return view, info
     if kind == "reveal":
         return ("pw:" if view.startswith("pwshow:") else "pwshow:") + rest, info
@@ -1442,6 +1453,8 @@ def main():
     if cmd != "list":
         sys.exit(__doc__)
     retv = int(os.environ.get("ROFI_RETV", "0"))
+    # the "copied" mark lasts one step: this one starts without it
+    COPIED.unlink(missing_ok=True)
     if zen.switch(retv, "zen-network"):
         return 0
     info = os.environ.get("ROFI_INFO", "")

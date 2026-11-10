@@ -28,7 +28,7 @@ USER_UNITS = ["waybar.service", "zen-autowidth.service", "zen-battery.service",
 SYSTEM_UNITS = ["NetworkManager.service", "systemd-resolved.service", "nftables.service",
                 "sshd.service", "bluetooth.service", "power-profiles-daemon.service",
                 "ly@tty2.service", "zen-console.service"]
-PANEL = [("bar/mic", []), ("bar/level", ["volume"]), ("bar/level", ["brightness"]),
+PANEL = [("bar/date", []), ("bar/mic", []), ("bar/level", ["volume"]), ("bar/level", ["brightness"]),
          ("bar/temp", []), ("bar/net", ["icon"]), ("bar/hotspot", []), ("bar/tmux", [])]
 
 problems = 0

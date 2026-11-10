@@ -255,7 +255,7 @@ def bt_busy():
 
 
 def bt_toggle(path, connected):
-    """Connect or disconnect in the background; a notification tells the result."""
+    """Connect or disconnect in the background; a notification tells a failure."""
     action = "disconnect" if connected else "connect"
     CONNECTING.write_text(f"{path} {action}\n")
     subprocess.Popen([sys.executable, SELF, "bt", action, path],
@@ -270,15 +270,13 @@ def bt_worker(action, path):
                   "Connect" if action == "connect" else "Disconnect")
         bt = bluetooth()
         name = next((n for p, n, _c in (bt[2] if bt else []) if p == path), path)
-        ok = res.returncode == 0
-        if action == "connect":
-            text = _("Connected: {}") if ok else _("Could not connect: {}")
-        else:
-            text = _("Disconnected: {}") if ok else _("Could not disconnect: {}")
-        args = ["notify-send", "-a", _("Sound"), "-u", "normal" if ok else "critical", text.format(name)]
-        if not ok and res.stderr.strip():
-            args.append(res.stderr.strip())
-        run(*args)
+        # only a failure is told: the device shows in the menu, the sound in the ears
+        if res.returncode != 0:
+            text = _("Could not connect: {}") if action == "connect" else _("Could not disconnect: {}")
+            args = ["notify-send", "-a", _("Sound"), "-u", "critical", text.format(name)]
+            if res.stderr.strip():
+                args.append(res.stderr.strip())
+            run(*args)
     finally:
         CONNECTING.unlink(missing_ok=True)
     return 0

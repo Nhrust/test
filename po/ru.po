@@ -407,8 +407,6 @@ msgstr "Цвета консоли и меню загрузки пропущен�
 msgid "Applications"
 msgstr "Приложения"
 
-msgid "Connected: {}"
-msgstr "Подключено: {}"
 
 msgid "Could not connect: {}"
 msgstr "Не удалось подключить: {}"
@@ -416,8 +414,6 @@ msgstr "Не удалось подключить: {}"
 msgid "Could not disconnect: {}"
 msgstr "Не удалось отключить: {}"
 
-msgid "Disconnected: {}"
-msgstr "Отключено: {}"
 
 msgid "Input"
 msgstr "Вход"
@@ -612,8 +608,6 @@ msgstr "канал"
 msgid "Security"
 msgstr "Защита"
 
-msgid "Copied: {}"
-msgstr "Скопировано: {}"
 
 msgid "Devices"
 msgstr "Устройства"
@@ -707,8 +701,6 @@ msgid "Now"
 msgstr "Сейчас"
 
 
-msgid "Password copied"
-msgstr "Пароль скопирован"
 
 msgid "Point the phone camera at the code: {}"
 msgstr "Наведи камеру телефона на код: {}"
@@ -884,3 +876,6 @@ msgstr "{} Мбит/с"
 
 msgid "{} of {}"
 msgstr "{} из {}"
+
+msgid "copied"
+msgstr "скопировано"

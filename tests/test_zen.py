@@ -406,7 +406,7 @@ class TestAudio(Zen):
             time.sleep(0.1)
         dev = next(d for d in self.load()["bluez"]["devices"] if d["name"] == "Pixel Buds")
         self.assertTrue(dev["connected"])
-        self.assertTrue(any("Connected: Pixel Buds" in c for c in self.calls("notify-send")))
+        self.assertFalse(self.calls("notify-send"), "a connection that worked is not told")
         self.menu("zen-audio", SELECT, "adj:btpower:0", "bt")
         self.assertFalse(self.load()["bluez"]["powered"])
 
@@ -539,6 +539,8 @@ class TestNetwork(Zen):
     def test_open_network(self):
         self.menu("zen-network", SELECT, "net:Cafe: free", "wifi")
         self.assertTrue(self.wait_for(lambda st: self.wifi_active(st) == "Cafe: free"))
+        self.idle()
+        self.assertFalse(self.calls("notify-send"), "the panel shows the connection")
         self.assertFalse(self.calls("rofi"))
 
     def test_password(self):
@@ -598,8 +600,13 @@ class TestNetwork(Zen):
         self.assertIn("view:conn:u-home", infos)
         self.assertIn("forget:u-home", infos)
         self.assertEqual(rows[int(options["new-selection"])][1]["info"], "copy:Home")
-        self.menu("zen-network", SELECT, "copy:192.168.1.23", "dev:wlan0")
+        _o, rows = self.menu("zen-network", SELECT, "copy:192.168.1.23", "dev:wlan0")
         self.assertEqual((self.mock / "clipboard.txt").read_text(), "192.168.1.23")
+        # no notification: the row says it, until the next step
+        self.assertIn("IPv4 · 192.168.1.23/24 · copied", self.texts(rows))
+        self.assertFalse(self.calls("notify-send"))
+        _o, rows = self.menu("zen-network", RIGHT, "copy:192.168.1.23", "dev:wlan0")
+        self.assertIn("IPv4 · 192.168.1.23/24", self.texts(rows))
         _o, rows = self.menu("zen-network", SELECT, "forget:u-home", "dev:wlan0")
         self.assertNotIn("u-home", [c["uuid"] for c in self.load()["nm"]["conns"]])
         self.assertEqual(_o["data"], "main")
