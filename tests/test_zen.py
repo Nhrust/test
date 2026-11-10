@@ -1190,6 +1190,7 @@ class TestAutowidth(unittest.TestCase):
     W = 1920
 
     def setUp(self):
+        sys.dont_write_bytecode = True
         import importlib.machinery
         import importlib.util
         path = str(REPO / "home/.local/lib/zen/autowidth")

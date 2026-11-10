@@ -111,7 +111,7 @@ place() {
 tree() {
 	base=$1 target=$2 sudo=$3
 	[ -d "$base" ] || return 0
-	(cd "$base" && find . -type f) | sort | while read -r f; do
+	(cd "$base" && find . -type f -not -path '*/__pycache__/*') | sort | while read -r f; do
 		place "$base/${f#./}" "$target/${f#./}" "$sudo"
 	done
 }
@@ -213,6 +213,11 @@ run systemctl --user daemon-reload
 run sudo systemctl daemon-reload
 enable_units user "$ROOT/lists/user-services.txt" "$H/user-services.txt"
 enable_units system "$ROOT/lists/system-services.txt" "$H/system-services.txt"
+# a running daemon keeps its old code: restart it when its script was replaced
+if [ -z "$DRY" ] && [ -e "$BACKUP$HOME/.local/lib/zen/autowidth" ] &&
+	systemctl --user is-active --quiet zen-autowidth.service; then
+	run systemctl --user restart zen-autowidth.service || true
+fi
 if grep -qx 'ly@tty2.service' "$ROOT/lists/system-services.txt"; then
 	run sudo systemctl disable getty@tty2.service
 fi
