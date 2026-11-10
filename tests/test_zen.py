@@ -1143,6 +1143,42 @@ class TestVitals(Zen):
         self.assertRegex(self.run_cmd(self.home / ".local/lib/zen/bar/uptime").stdout, r"^\d+(d|h|m)")
 
 
+class TestResize(Zen):
+    """Mod+Alt+arrows move the border between the focused window and its neighbour."""
+
+    def layout(self, *wins):
+        self.state["niri"]["windows"] = [
+            {"id": i, "is_focused": f, "workspace_id": ws, "layout": {"pos_in_scrolling_layout": pos}}
+            for i, f, ws, pos in wins]
+        self.save()
+
+    def actions(self, way):
+        self.run_cmd(self.home / ".local/lib/zen/resize", way)
+        return [c for c in self.calls("niri") if " action " in c]
+
+    def test_between_columns(self):
+        # focused column 1 of two: right grows it, the second loses as much
+        self.layout((1, True, 7, [1, 1]), (2, False, 7, [2, 1]), (3, False, 8, [2, 1]))
+        self.assertEqual(self.actions("right"), ["niri msg action set-window-width --id 1 +5%",
+                                                 "niri msg action set-window-width --id 2 -5%"])
+
+    def test_last_column_uses_the_border_before_it(self):
+        self.layout((1, False, 7, [1, 1]), (2, True, 7, [2, 1]))
+        self.assertEqual(self.actions("left"), ["niri msg action set-window-width --id 2 +5%",
+                                                "niri msg action set-window-width --id 1 -5%"])
+
+    def test_within_a_column(self):
+        self.layout((1, True, 7, [1, 1]), (2, False, 7, [1, 2]))
+        self.assertEqual(self.actions("up"), ["niri msg action set-window-height --id 1 -5%",
+                                              "niri msg action set-window-height --id 2 +5%"])
+
+    def test_alone_or_floating(self):
+        self.layout((1, True, 7, [1, 1]), (2, False, 8, [2, 1]))
+        self.assertEqual(self.actions("right"), [])
+        self.layout((1, True, 7, None), (2, False, 7, [1, 1]))
+        self.assertEqual(self.actions("right"), [])
+
+
 class TestConfigs(Zen):
 
     def test_waybar_paths(self):

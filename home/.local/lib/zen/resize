@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""resize — move the border between the focused window and its neighbour.
+
+  resize left|right|up|down
+
+Niri's own size actions change one window and push the others along the strip.
+This moves a shared border instead, as in tmux: right or left moves the border
+between the focused column and the next one (or the previous one, for the last
+column) by 5% of the screen, so one column grows by what the other loses; up or
+down does the same with the window above or below in the column. Only niri's
+documented IPC is used: "niri msg -j windows" for the layout and
+"niri msg action set-window-width/-height --id".
+"""
+import json
+import subprocess
+import sys
+
+STEP = 5  # percent of the screen
+
+
+def niri(*args):
+    return subprocess.run(["niri", "msg", *args], capture_output=True, text=True)
+
+
+def main(argv):
+    if len(argv) != 2 or argv[1] not in ("left", "right", "up", "down"):
+        print(__doc__, file=sys.stderr)
+        return 2
+    way = argv[1]
+    try:
+        windows = json.loads(niri("--json", "windows").stdout)
+    except ValueError:
+        return 1
+    me = next((w for w in windows if w.get("is_focused")), None)
+    pos = ((me or {}).get("layout") or {}).get("pos_in_scrolling_layout")
+    if not pos:
+        return 0  # nothing focused, or a floating window
+    col, row = pos
+    mates = [w for w in windows if w.get("workspace_id") == me.get("workspace_id")
+             and (w.get("layout") or {}).get("pos_in_scrolling_layout")]
+
+    def at(c, r=None):
+        for w in mates:
+            wc, wr = w["layout"]["pos_in_scrolling_layout"]
+            if wc == c and (r is None or wr == r):
+                return w
+        return None
+
+    if way in ("left", "right"):
+        after, before = at(col + 1), at(col - 1)
+        what = "set-window-width"
+    else:
+        after, before = at(col, row + 1), at(col, row - 1)
+        what = "set-window-height"
+    # the border after the focused window, or the one before it at the far end;
+    # moving it right (down) grows what is left of (above) it
+    if after:
+        other, grow = after, way in ("right", "down")
+    elif before:
+        other, grow = before, way in ("left", "up")
+    else:
+        return 0
+    niri("action", what, "--id", str(me["id"]), f"{'+' if grow else '-'}{STEP}%")
+    niri("action", what, "--id", str(other["id"]), f"{'-' if grow else '+'}{STEP}%")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

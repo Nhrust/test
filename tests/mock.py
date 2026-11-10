@@ -185,6 +185,8 @@ def niri(st):
         print(json.dumps(n["outputs"]))
     elif ARGS[:3] == ["msg", "--json", "windows"]:
         print(json.dumps(n["windows"]))
+    elif ARGS[:2] == ["msg", "action"]:
+        pass
     elif ARGS[:3] == ["msg", "--json", "keyboard-layouts"]:
         print(json.dumps({"names": ["English (US)", "Russian"], "current_idx": 0}))
     return 0

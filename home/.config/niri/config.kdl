@@ -313,6 +313,12 @@ binds {
     Mod+Shift+Minus { set-window-height "-10%"; }
     Mod+Shift+Equal { set-window-height "+10%"; }
 
+    // move the border with the neighbouring window: one grows, the other shrinks
+    Mod+Alt+Left  { spawn-sh "~/.local/lib/zen/resize left"; }
+    Mod+Alt+Right { spawn-sh "~/.local/lib/zen/resize right"; }
+    Mod+Alt+Up    { spawn-sh "~/.local/lib/zen/resize up"; }
+    Mod+Alt+Down  { spawn-sh "~/.local/lib/zen/resize down"; }
+
     //Mod+V       { toggle-window-floating; }
     //Mod+Shift+V { switch-focus-between-floating-and-tiling; }
 
