@@ -1,0 +1,12 @@
+#!/bin/sh
+# vram — Waybar module: video memory in use (amdgpu); nothing without the sensor.
+used=0
+for f in /sys/class/drm/card*/device/mem_info_vram_used; do
+	[ -r "$f" ] || continue
+	v=$(cat "$f"); [ "$v" -gt "$used" ] && used=$v
+done
+if [ "$used" -gt 0 ]; then
+	awk -v b="$used" 'BEGIN { printf "%4.1fG\n", b / 1073741824 }'
+else
+	echo
+fi

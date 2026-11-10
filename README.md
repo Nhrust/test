@@ -33,6 +33,7 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 | Where | Left click | Right click | Middle click | Wheel |
 |---|---|---|---|---|
+| monitoring (processor, memory, …) | btop | choose the modules and their order | — | — |
 | player (its icon and ▶/⏸) | sound | play/pause | mute the player only | previous / next track |
 | clock, bell | notifications, calendar, weather | do not disturb on/off | clear all notifications | — |
 | weather | notifications, calendar, weather | refresh now | — | — |

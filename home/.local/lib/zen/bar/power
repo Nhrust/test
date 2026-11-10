@@ -1,0 +1,14 @@
+#!/bin/sh
+# power — Waybar module: the battery's power in watts, "+" while charging;
+# nothing without a battery.
+. "$HOME/.local/lib/zen/zen.sh"
+b=$(zen_battery) || { echo; exit 0; }
+if [ -r "$b/power_now" ]; then
+	uw=$(cat "$b/power_now")
+else
+	uw=$(awk -v i="$(cat "$b/current_now" 2>/dev/null || echo 0)" -v v="$(cat "$b/voltage_now" 2>/dev/null || echo 0)" \
+		'BEGIN { printf "%d", i * v / 1000000 }')
+fi
+sign=
+[ "$(cat "$b/status" 2>/dev/null)" = Charging ] && sign=+
+awk -v w="$uw" -v s="$sign" 'BEGIN { printf "%s%.1fW\n", s, w / 1000000 }'

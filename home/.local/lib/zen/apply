@@ -6,7 +6,8 @@
   zen apply --check   list what would change, write nothing (exit 1 if anything would)
 
 Colour variables: rofi/zen-colors.rasi (@zen-NAME), waybar/zen-colors.css
-(@zen_NAME), and the Rofi search placeholder in the zen locale.
+(@zen_NAME), and the Rofi search placeholder in the zen locale. The panel's
+monitoring modules ([panel] vitals): waybar/zen-vitals.jsonc and .css.
 Templates: ~/.local/share/zen/templates/PATH becomes ~/PATH, and
 /usr/local/share/zen/templates/PATH becomes /PATH. In a template {{NAME}} is
 a colour from [palette] or [terminal]; see zen.render for the formats.
@@ -20,6 +21,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path.home() / ".local/lib/zen"))
+import vitals  # noqa: E402
 import zen  # noqa: E402
 from zen import _  # noqa: E402
 
@@ -36,6 +38,7 @@ def generated(colors):
     yield zen.CONFIG_HOME / "rofi/zen-switcher.rasi", switcher()
     yield (zen.CONFIG_HOME / "waybar/zen-colors.css",
            "".join(f"@define-color zen_{k} {v};\n" for k, v in colors.items()))
+    yield from vitals.generated()
 
 
 def switcher():

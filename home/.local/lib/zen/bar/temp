@@ -1,16 +1,28 @@
 #!/bin/sh
-# temp — Waybar module: average temperature of the CPU, GPU and NVMe sensors.
+# temp — Waybar module: temperature.
+#   temp        the average of the CPU, GPU and NVMe sensors
+#   temp cpu    the processor     temp gpu   the video card     temp nvme   the SSD
+# Nothing when the sensor is missing, so the panel hides the module.
+case ${1:-} in
+	cpu) names="k10temp zenpower coretemp cpu_thermal" ;;
+	gpu) names="amdgpu radeon nouveau xe i915" ;;
+	nvme) names="nvme" ;;
+	*) names="k10temp zenpower coretemp cpu_thermal amdgpu radeon nouveau xe i915 nvme" ;;
+esac
 sum=0; n=0
 for h in /sys/class/hwmon/hwmon*; do
-	case "$(cat "$h/name" 2>/dev/null)" in
-		k10temp|zenpower|coretemp|cpu_thermal|amdgpu|radeon|nouveau|xe|i915|nvme)
+	name=$(cat "$h/name" 2>/dev/null) || continue
+	case " $names " in
+		*" $name "*)
 			t=$(cat "$h/temp1_input" 2>/dev/null) || continue
 			sum=$((sum + t)); n=$((n + 1)) ;;
 	esac
 done
-if [ "$n" -eq 0 ] && [ -r /sys/class/thermal/thermal_zone0/temp ]; then
+if [ "$n" -eq 0 ] && [ -z "${1:-}" ] && [ -r /sys/class/thermal/thermal_zone0/temp ]; then
 	sum=$(cat /sys/class/thermal/thermal_zone0/temp); n=1
 fi
 if [ "$n" -gt 0 ]; then
 	printf "%3d°C\n" "$((sum / n / 1000))"
+else
+	echo
 fi

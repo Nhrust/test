@@ -879,3 +879,100 @@ msgstr "{} из {}"
 
 msgid "copied"
 msgstr "скопировано"
+
+# panel monitoring
+msgid "As it was"
+msgstr "Как было"
+
+msgid "Battery"
+msgstr "Батарея"
+
+msgid "Disk"
+msgstr "Диск"
+
+msgid "Enter switches · Alt+↑↓ moves"
+msgstr "Enter включает и выключает · Alt+↑↓ двигает"
+
+msgid "GHz"
+msgstr "ГГц"
+
+msgid "Memory"
+msgstr "Память"
+
+msgid "Processor"
+msgstr "Процессор"
+
+msgid "System"
+msgstr "Система"
+
+msgid "Temperature"
+msgstr "Температура"
+
+msgid "Video card"
+msgstr "Видеокарта"
+
+msgid "average of the sensors"
+msgstr "средняя по датчикам"
+
+msgid "download"
+msgstr "скачивание"
+
+msgid "fan"
+msgstr "вентилятор"
+
+msgid "free on /"
+msgstr "свободно на /"
+
+msgid "frequency"
+msgstr "частота"
+
+msgid "load average, 1 minute"
+msgstr "средняя нагрузка за минуту"
+
+msgid "load"
+msgstr "загрузка"
+
+msgid "nothing"
+msgstr "ничего"
+
+msgid "panel"
+msgstr "панель"
+
+msgid "power, watts"
+msgstr "расход, ватты"
+
+msgid "processor"
+msgstr "процессор"
+
+msgid "read and write"
+msgstr "чтение и запись"
+
+msgid "swap"
+msgstr "подкачка"
+
+msgid "upload"
+msgstr "отдача"
+
+msgid "uptime"
+msgstr "время работы"
+
+msgid "used"
+msgstr "занято"
+
+msgid "used, percent"
+msgstr "занято, процент"
+
+msgid "video card"
+msgstr "видеокарта"
+
+msgid "video memory"
+msgstr "видеопамять"
+
+msgid "%dd %dh"
+msgstr "%dд %dч"
+
+msgid "%dh %dm"
+msgstr "%dч %dм"
+
+msgid "%dm"
+msgstr "%dм"

@@ -1044,7 +1044,8 @@ class TestSwitcher(Zen):
         self.assertEqual(self.calls("rofi"), [])
 
     def test_every_menu_takes_the_keys(self):
-        for script in ("zen-center", "zen-audio", "zen-displays", "zen-clipboard", "zen-power", "zen-network"):
+        for script in ("zen-center", "zen-audio", "zen-displays", "zen-clipboard", "zen-power", "zen-network",
+                       "zen-vitals"):
             options, _rows = self.menu(script)
             self.assertEqual(options.get("use-hot-keys"), "true", script)
 
@@ -1052,9 +1053,81 @@ class TestSwitcher(Zen):
         self.run_cmd(self.home / ".local/bin/zen", "apply", "--user")
         text = (self.home / ".config/rofi/zen-switcher.rasi").read_text()
         self.assertIn('action: "kb-custom-16"', text)
-        for name in ("center", "audio", "displays", "clipboard", "power", "network"):
+        for name in ("center", "audio", "displays", "clipboard", "power", "network", "vitals"):
             rasi = (self.home / f".config/rofi/{name}.rasi").read_text()
             self.assertIn("switcher", rasi, name)
+
+
+class TestVitals(Zen):
+    """The monitoring modules: chosen in a menu, kept in zen.conf, made into panel files."""
+
+    def conf(self):
+        return (self.home / ".config/zen/zen.conf").read_text()
+
+    def keys(self, rows):
+        return [r[1]["info"][4:] for r in rows if r[1].get("active")]
+
+    def test_default(self):
+        options, rows = self.menu("zen-vitals")
+        self.assertEqual(self.keys(rows), ["cpu", "gpu", "memory", "temp", "speed"])
+        self.assertIn("5 of 6", options["message"])
+        self.assertEqual(rows[-1][1]["info"], "reset")
+
+    def test_switch_and_move(self):
+        self.menu("zen-vitals", SELECT, "key:gpu")
+        _o, rows = self.menu("zen-vitals", RIGHT, "key:uptime")
+        self.assertEqual(self.keys(rows), ["cpu", "memory", "temp", "speed", "uptime"])
+        _o, rows = self.menu("zen-vitals", 15, "key:uptime")  # Alt+Up
+        self.assertEqual(self.keys(rows), ["cpu", "memory", "temp", "uptime", "speed"])
+        self.menu("zen-vitals", 16, "key:speed")  # Alt+Down on the last: stays
+        self.assertIn("vitals = cpu, memory, temp, uptime, speed", self.conf())
+        # the panel files follow
+        made = json.loads((self.home / ".config/waybar/zen-vitals.jsonc").read_text().split("\n", 1)[1])
+        self.assertEqual(made["modules-left"], ["niri/workspaces", "custom/gap-l1", "cpu", "memory",
+                                                "custom/temp", "custom/uptime", "custom/speed", "custom/gap-l2"])
+        self.assertEqual(made["custom/uptime"]["on-click-right"], "~/.local/bin/zen-vitals")
+        css = (self.home / ".config/waybar/zen-vitals.css").read_text()
+        self.assertIn("#memory,\n#custom-temp,\n#custom-uptime,\n#custom-speed {\n    border-left", css)
+
+    def test_at_most_six(self):
+        for key in ("uptime", "upload", "disk"):
+            _o, rows = self.menu("zen-vitals", SELECT, f"key:{key}")
+        self.assertEqual(len(self.keys(rows)), 6)
+        self.assertNotIn("disk", self.keys(rows))
+        options, rows = self.menu("zen-vitals", SELECT, "reset")
+        self.assertEqual(self.keys(rows), ["cpu", "gpu", "memory", "temp", "speed"])
+
+    def test_keeps_the_rest_of_zen_conf(self):
+        conf = self.home / ".config/zen/zen.conf"
+        conf.write_text("# mine\n[general]\nlocale = ru_RU.UTF-8\n\n[weather]\nlocation = Moscow\n")
+        self.menu("zen-vitals", SELECT, "key:fan")
+        text = conf.read_text()
+        self.assertTrue(text.startswith("# mine\n[general]\nlocale = ru_RU.UTF-8\n\n[weather]\nlocation = Moscow\n"))
+        self.assertIn("[panel]", text)
+        self.menu("zen-vitals", SELECT, "key:fan")
+        self.assertEqual(conf.read_text().count("vitals ="), 1)
+
+    def test_every_module(self):
+        """Each module in the list makes a panel entry whose script exists."""
+        keys = ["cpu", "cpufreq", "load", "gpu", "vram", "memory", "mempct", "swap", "temp", "tempcpu",
+                "tempgpu", "tempnvme", "fan", "speed", "upload", "disk", "diskio", "power", "uptime"]
+        conf = self.home / ".config/zen/zen.conf"
+        for i in range(0, len(keys), 6):
+            conf.write_text(f"[panel]\nvitals = {', '.join(keys[i:i + 6])}\n")
+            self.run_cmd(self.home / ".local/lib/zen/apply", "--user")
+            made = json.loads((self.home / ".config/waybar/zen-vitals.jsonc").read_text().split("\n", 1)[1])
+            self.assertEqual(len(made["modules-left"]), len(keys[i:i + 6]) + 3)
+            for name in made["modules-left"][2:-1]:
+                command = made[name].get("exec")
+                if command:
+                    self.assertTrue(os.access(self.home / command.split()[0][2:], os.X_OK), command)
+
+    def test_scripts(self):
+        for script in ("temp", "vram", "fan", "power", "uptime"):
+            path = self.home / ".local/lib/zen/bar" / script
+            res = self.run_cmd(path)
+            self.assertEqual(res.returncode, 0, script)
+        self.assertRegex(self.run_cmd(self.home / ".local/lib/zen/bar/uptime").stdout, r"^\d+(d|h|m)")
 
 
 class TestConfigs(Zen):

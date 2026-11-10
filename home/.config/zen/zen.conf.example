@@ -7,6 +7,13 @@
 # It must be generated (listed by "locale -a").
 locale =
 
+[panel]
+# Monitoring modules on the left of the panel, in order, at most six; a right
+# click on one of them opens a menu that changes this line. Keys: cpu cpufreq
+# load gpu vram memory mempct swap temp tempcpu tempgpu tempnvme fan speed
+# upload disk diskio power uptime
+vitals = cpu, gpu, memory, temp, speed
+
 [weather]
 # City name or "latitude,longitude"; empty — detect by IP address.
 location =

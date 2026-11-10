@@ -1,0 +1,8 @@
+#!/bin/sh
+# fan — Waybar module: the fan speed in RPM; nothing when the laptop does not report it.
+for f in /sys/class/hwmon/hwmon*/fan*_input; do
+	[ -r "$f" ] || continue
+	echo "$(cat "$f")"
+	exit 0
+done
+echo

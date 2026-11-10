@@ -1,0 +1,32 @@
+@import "zen.rasi"
+
+window {
+    height: calc( 141px + 1em + 10 * ( 1.2em floor 1px ) + 1em + 19px );
+}
+
+mainbox {
+    children: [ switcher, message, listview ];
+}
+
+listview {
+    expand: false;
+}
+
+/* the header takes the room left above the ten rows, so every menu keeps one size */
+message {
+    expand: true;
+    padding: 4px 0px 8px 0px;
+    border: 0px 0px 1px 0px;
+    border-color: @zen-line;
+}
+
+textbox {
+    vertical-align: 0.5;
+    font: "JetBrainsMono Nerd Font 10";
+    text-color: @zen-muted;
+    horizontal-align: 0.5;
+}
+
+button-zen-vitals {
+    text-color: @zen-accent;
+}

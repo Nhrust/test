@@ -1,0 +1,12 @@
+#!/bin/sh
+# uptime — Waybar module: time since the system started, "3h 12m" (in the zen language).
+. "$HOME/.local/lib/zen/zen.sh"
+s=$(cut -d. -f1 /proc/uptime)
+d=$((s / 86400)); h=$((s % 86400 / 3600)); m=$((s % 3600 / 60))
+if [ "$d" -gt 0 ]; then
+	printf "$(gettext "%dd %dh")\n" "$d" "$h"
+elif [ "$h" -gt 0 ]; then
+	printf "$(gettext "%dh %dm")\n" "$h" "$m"
+else
+	printf "$(gettext "%dm")\n" "$m"
+fi

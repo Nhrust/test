@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""speed — Waybar module: download speed of the physical network cards."""
+"""speed — Waybar module: download speed of the physical network cards.
+
+  speed      download
+  speed up   upload
+"""
 import glob
 import os
+import sys
 import time
 
 INTERVAL = 2
+
+
+COUNTER = "tx_bytes" if sys.argv[1:] == ["up"] else "rx_bytes"
 
 
 def rx_bytes():
@@ -13,7 +21,7 @@ def rx_bytes():
         if not os.path.exists(os.path.join(dev, "device")):
             continue
         try:
-            with open(os.path.join(dev, "statistics/rx_bytes")) as f:
+            with open(os.path.join(dev, "statistics", COUNTER)) as f:
                 total += int(f.read())
         except OSError:
             pass

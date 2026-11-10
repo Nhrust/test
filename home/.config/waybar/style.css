@@ -1,4 +1,5 @@
 @import url("zen-colors.css");
+@import url("zen-vitals.css");
 
 * {
     font-family: "JetBrainsMono Nerd Font";
@@ -50,21 +51,7 @@ window#waybar {
     border-color: @zen_muted;
 }
 
-#cpu,
-#custom-gpu,
-#memory,
-#custom-temp,
-#custom-speed {
-    padding: 0 10px;
-    color: @zen_fg;
-}
-
-#custom-gpu,
-#memory,
-#custom-temp,
-#custom-speed {
-    border-left: 1px solid @zen_line;
-}
+/* the monitoring modules: zen-vitals.css, made by zen apply */
 
 #custom-gap-l1,
 #custom-gap-l2,

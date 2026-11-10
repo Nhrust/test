@@ -5,16 +5,9 @@
     "spacing": 0,
     "expand-left": true,
     "expand-right": true,
-    "modules-left": [
-        "niri/workspaces",
-        "custom/gap-l1",
-        "cpu",
-        "custom/gpu",
-        "memory",
-        "custom/temp",
-        "custom/speed",
-        "custom/gap-l2"
-    ],
+    // modules-left and the monitoring modules: zen-vitals.jsonc, made by "zen apply"
+    // from [panel] vitals in zen.conf (right click on a monitoring module changes it)
+    "include": ["~/.config/waybar/zen-vitals.jsonc"],
     "modules-center": [
         "mpris",
         "custom/date",
@@ -57,36 +50,6 @@
         "format": " ",
         "interval": 86400,
         "expand": true,
-        "tooltip": false
-    },
-    "cpu": {
-        "on-click": "foot btop",
-        "format": "󰍛 {usage:>3}%",
-        "interval": 2,
-        "tooltip": false
-    },
-    "custom/gpu": {
-        "exec": "~/.local/lib/zen/bar/gpu",
-        "on-click": "foot btop",
-        "tooltip": false
-    },
-    "memory": {
-        "on-click": "foot btop",
-        "format": " {used:>4.1f}G",
-        "interval": 5,
-        "tooltip": false
-    },
-    "custom/temp": {
-        "exec": "~/.local/lib/zen/bar/temp",
-        "on-click": "foot btop",
-        "interval": 5,
-        "tooltip": false,
-        "format": "󰔏 {}"
-    },
-    "custom/speed": {
-        "exec": "~/.local/lib/zen/bar/speed",
-        "on-click": "foot btop",
-        "format": "󰓢 {}",
         "tooltip": false
     },
     "mpris": {
