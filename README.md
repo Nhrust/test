@@ -31,17 +31,20 @@ lock screen (gtklock). [Русская версия](README.ru.md)
 
 ## Panel and keys
 
-| Where | Left click | Right click | Wheel |
-|---|---|---|---|
-| player (its icon and ▶/⏸) | sound | play/pause; middle: mute the player | previous / next track |
-| clock, bell | notifications, calendar, weather | do not disturb on/off; middle: clear all | — |
-| weather | notifications, calendar, weather | refresh now | — |
-| brightness, caffeine | displays | caffeine on/off | brightness |
-| volume | sound | mute | volume |
-| network | network | Wi-Fi on/off | — |
-| hotspot (while on: devices) | hotspot | — | — |
-| muted microphone | unmute | — | — |
-| profile, battery | power | next power profile | — |
+| Where | Left click | Right click | Middle click | Wheel |
+|---|---|---|---|---|
+| player (its icon and ▶/⏸) | sound | play/pause | mute the player only | previous / next track |
+| clock, bell | notifications, calendar, weather | do not disturb on/off | clear all notifications | — |
+| weather | notifications, calendar, weather | refresh now | — | — |
+| brightness, caffeine | displays | caffeine on/off | — | brightness |
+| volume | sound | mute | — | volume |
+| network | network | — | — | — |
+| hotspot (while on: devices) | hotspot | — | — | — |
+| muted microphone | unmute | — | — | — |
+| profile, battery | power | next power profile | — | — |
+
+In the notifications menu a middle or right click deletes a notification; in
+the clipboard menu a middle click deletes an entry and a right click pins it.
 
 Mod+Space apps · Mod+Shift+A notifications · Mod+V clipboard · Mod+P displays ·
 Mod+N network · Mod+M sound · Mod+L lock · Ctrl+Shift+Esc btop. Inside a menu, Alt+1… or the

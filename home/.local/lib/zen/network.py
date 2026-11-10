@@ -2,7 +2,7 @@
 
   zen-network              open the menu (a second call closes it)
   zen-network open VIEW    open the menu on a view (the prompts come back this way)
-  zen-network wifi toggle  switch Wi-Fi on or off (right click on the panel icon)
+  zen-network wifi toggle  switch Wi-Fi on or off
 
 NetworkManager (nmcli) runs the networks and Tailscale its own network. Each
 saved network keeps its own settings: automatic connection, metered, MAC

@@ -153,7 +153,6 @@
         "exec": "~/.local/lib/zen/bar/net icon",
         "interval": 5,
         "on-click": "~/.local/bin/zen-network",
-        "on-click-right": "~/.local/bin/zen-network wifi toggle",
         "tooltip": false
     },
     "custom/lang": {
