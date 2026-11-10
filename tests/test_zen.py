@@ -1245,6 +1245,33 @@ class TestAutowidth(unittest.TestCase):
         self.m.track_stacks([3], {3: 960})
         self.assertEqual(self.sent[0], "action set-window-width --id 3 100%")
 
+    def test_whole_event_stream(self):
+        import io
+
+        def win(i, col, row, width, focused=False):
+            return {"id": i, "workspace_id": 1, "is_floating": False, "is_focused": focused,
+                    "layout": {"pos_in_scrolling_layout": [col, row], "tile_size": [width, 600]}}
+
+        def lay(col, row, width):
+            return {"pos_in_scrolling_layout": [col, row], "tile_size": [width, 600]}
+
+        events = [
+            {"WindowsChanged": {"windows": [win(1, 1, 1, 960), win(2, 2, 1, 960), win(3, 3, 1, 1900, True)]}},
+            {"WindowLayoutsChanged": {"changes": [[3, lay(2, 2, 960)], [2, lay(2, 1, 960)]]}},
+            {"WindowLayoutsChanged": {"changes": [[3, lay(3, 1, 960)], [2, lay(2, 1, 960)]]}},
+        ]
+
+        class Proc:
+            stdout = io.StringIO("".join(json.dumps(e) + "\n" for e in events))
+            wait = staticmethod(lambda: 0)
+        self.m.subprocess = type("S", (), {"Popen": staticmethod(lambda *a, **k: Proc),
+                                           "run": staticmethod(subprocess.run), "PIPE": -1})
+        sys.argv = ["autowidth"]
+        self.m.main()
+        self.assertEqual(self.sent, ["action focus-window --id 1", "action focus-window --id 3",
+                                     "action set-window-width --id 3 100%",
+                                     "action focus-window --id 2", "action focus-window --id 3"])
+
     def test_closing_a_window_does_not_restore(self):
         self.win(2, 1)
         c = self.win(3, 1, 2)

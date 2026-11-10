@@ -16,6 +16,10 @@ focused_id = None
 last_close = 0.0
 
 
+def log(*parts):
+    print("autowidth:", *parts, file=sys.stderr, flush=True)
+
+
 def niri(*args):
     return subprocess.run(["niri", "msg", *args], capture_output=True, text=True)
 
@@ -85,6 +89,7 @@ def on_new_window(w):
                 set_width(left[0]["id"], "50%")
             set_width(w["id"], "50%")
             stack_partner[w["id"]] = [x["id"] for x in left]
+            log(f"window {w['id']} opened beside a stack: half of the screen")
             return
     set_width(w["id"], "100%")
 
@@ -174,9 +179,12 @@ def track_stacks(changed, old_widths):
         if now:
             if width and old_widths.get(win_id):
                 saved[win_id] = old_widths[win_id] / width
+            log(f"window {win_id} joined a column, width {saved.get(win_id)} remembered")
             reveal(win_id)
         elif win_id in saved and time.monotonic() - last_close > 1:
-            set_width(win_id, f"{share_to_percent(saved.pop(win_id))}%")
+            share = saved.pop(win_id)
+            log(f"window {win_id} left the column, width back to {share_to_percent(share)}%")
+            set_width(win_id, f"{share_to_percent(share)}%")
             reveal(win_id)
 
 
@@ -249,6 +257,8 @@ def main():
                     on_closed(i)
             rebuild_pairs()
             for i in windows:
+                if windows[i].get("is_focused"):
+                    focused_id = i
                 pos = (windows[i].get("layout") or {}).get("pos_in_scrolling_layout")
                 stacked[i] = bool(pos) and len(column_windows(windows[i]["workspace_id"], pos[0])) > 1
         elif "WindowFocusChanged" in event:
@@ -259,6 +269,8 @@ def main():
             windows[w["id"]] = w
             if is_new:
                 stacked[w["id"]] = False
+            if w.get("is_focused"):
+                focused_id = w["id"]
             if is_new or (w["id"] in pending and w["layout"].get("pos_in_scrolling_layout")):
                 pending.discard(w["id"])
                 on_new_window(w)
