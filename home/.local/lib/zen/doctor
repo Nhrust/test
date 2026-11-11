@@ -64,6 +64,9 @@ def installed(unit, user):
     return run(*cmd, "cat", unit).returncode == 0
 
 
+ONESHOT = {"zen-console.service", "nftables.service"}
+
+
 def services():
     section(_("Services"))
     for unit in USER_UNITS:
@@ -76,8 +79,10 @@ def services():
     for unit in SYSTEM_UNITS:
         if installed(unit, False):
             state = active(unit, False)
-            ok = state == "active" or (unit == "zen-console.service" and state == "inactive" and
-                                       run("systemctl", "is-enabled", unit).stdout.strip() == "enabled")
+            # a oneshot unit without RemainAfterExit loads its settings and ends: "inactive" is fine
+            ok = state == "active" or (unit in ONESHOT and state == "inactive" and
+                                       run("systemctl", "is-enabled", unit).stdout.strip() == "enabled" and
+                                       run("systemctl", "show", "-p", "Result", "--value", unit).stdout.strip() == "success")
             report(ok, f"{unit}: {state}", f"systemctl status {unit}")
     for user in (True, False):
         cmd = ["systemctl", "--user"] if user else ["systemctl"]

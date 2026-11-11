@@ -6,7 +6,7 @@
 #
 # It follows the install guide and the author's laptop step by step (UEFI; GPT
 # with an 8 GiB ESP; LUKS2 → LVM (swap + root) → Btrfs with the subvolumes @,
-# @home, @var_log, @var_cache and @snapshots, compress=zstd:3,noatime; Snapper
+# @home, @var_log, @var_cache and @snapshots, compress=zstd:3; Snapper
 # set up before fstab; zram; NetworkManager with systemd-resolved; linux and
 # linux-lts as unified kernel images on the ESP; Limine as the boot loader) and asks for what is personal: the disk, host name, user, passwords,
 # time zone, locale. Passwords are read without echo and never put on a command
@@ -136,7 +136,7 @@ CRYPT=$(part 2)
 say
 say "Plan:"
 say "  disk        $DISK  (ERASED: $ESP ESP $ESP_SIZE, $CRYPT LUKS2 → LVM vg0 → swap $SWAP + root)"
-say "  Btrfs       @ @home @var_log @var_cache @snapshots, compress=zstd:3,noatime; Snapper before fstab"
+say "  Btrfs       @ @home @var_log @var_cache @snapshots, compress=zstd:3; Snapper before fstab"
 say "  host/user   $HOST / $USER_NAME"
 say "  time/locale $TIMEZONE, $LOCALE, console keymap $KEYMAP"
 say "  microcode   ${UCODE:-none (CPU not recognised)}"
@@ -164,27 +164,27 @@ run partprobe "$DISK"
 run udevadm settle
 
 say "== encryption, LVM, Btrfs"
-run mkfs.fat -F 32 "$ESP"
+run mkfs.fat -F 32 -n ESP "$ESP"
 runp "$LUKS_PASSPHRASE" cryptsetup luksFormat --type luks2 --batch-mode --key-file=- "$CRYPT"
 runp "$LUKS_PASSPHRASE" cryptsetup open --key-file=- "$CRYPT" cryptlvm
 run pvcreate /dev/mapper/cryptlvm
 run vgcreate vg0 /dev/mapper/cryptlvm
 run lvcreate -L "$SWAP" -n swap vg0
 run lvcreate -l 100%FREE -n root vg0
-run mkfs.btrfs -L archroot /dev/vg0/root
-run mkswap /dev/vg0/swap
+run mkfs.btrfs -L MASTER /dev/vg0/root
+run mkswap -L SWAP /dev/vg0/swap
 run swapon --priority 10 /dev/vg0/swap
 run mount /dev/vg0/root /mnt
 for sub in @ @home @var_log @var_cache; do
 	run btrfs subvolume create "/mnt/$sub"
 done
 run umount /mnt
-BTRFS=compress=zstd:3,noatime
+BTRFS=compress=zstd:3
 run mount -o "subvol=@,$BTRFS" /dev/vg0/root /mnt
 run mount --mkdir -o "subvol=@home,$BTRFS" /dev/vg0/root /mnt/home
 run mount --mkdir -o "subvol=@var_log,$BTRFS" /dev/vg0/root /mnt/var/log
 run mount --mkdir -o "subvol=@var_cache,$BTRFS" /dev/vg0/root /mnt/var/cache
-run mount --mkdir "$ESP" /mnt/efi
+run mount --mkdir -o fmask=0077,dmask=0077 "$ESP" /mnt/efi
 
 say "== packages"
 # snap-pac comes later (deploy.sh): its pacman hook fails in the installer's chroot

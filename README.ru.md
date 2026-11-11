@@ -4,6 +4,10 @@
 меню Rofi для повседневных задач, тонкая панель Waybar, оформленная цепочка
 загрузки (Limine, Ly) и экран блокировки (gtklock). [English](README.md)
 
+## Установка Arch
+
+Гайд лежит в [docs/ru](docs/ru/README.md): модульная установка с выбором стека (UKI, Limine, systemd-boot, GRUB, EFISTUB, LUKS, LVM, ext4, Btrfs, zram, fish, zsh, nvim, nano) и пояснениями за и против. Мой путь отмечен ★.
+
 ## Устройство репозитория
 
 | Путь | Что |

@@ -1,6 +1,7 @@
 # Optional tools.
 7zip
 bat
+cups
 exfatprogs
 ntfs-3g
 ntfsprogs

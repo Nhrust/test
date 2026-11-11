@@ -168,7 +168,13 @@ if [ ! -d "$DATA/icons/$CURSOR" ]; then
 	fi
 	rm -f "$t"
 fi
+# nvim autopairs: a plugin cloned into the native package directory, no manager
+MINI="$DATA/nvim/site/pack/local/opt/mini.pairs"
+[ -d "$MINI" ] || run git clone --depth 1 https://github.com/echasnovski/mini.pairs "$MINI" ||
+	say "! mini.pairs not installed, nvim works without it"
 run gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR"
+# libadwaita apps (Nautilus and its tab overview) take dark from this, not from the GTK theme
+run gsettings set org.gnome.desktop.interface color-scheme prefer-dark
 # GTK apps and the panel tray take icons from Papirus-Dark, as Qt does; its
 # "panel" set gives tray applications their own icons in one colour
 run gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark

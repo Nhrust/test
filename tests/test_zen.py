@@ -1329,10 +1329,10 @@ class TestLiveInstall(unittest.TestCase):
                              capture_output=True, text=True)
         self.assertEqual(res.returncode, 0, res.stderr)
         out = res.stdout
-        for line in ("mkfs.fat -F 32 /dev/nvme0n1p1",
+        for line in ("mkfs.fat -F 32 -n ESP /dev/nvme0n1p1",
                      "cryptsetup luksFormat --type luks2 --batch-mode --key-file=- /dev/nvme0n1p2",
                      "lvcreate -L 4G -n swap vg0",
-                     "mount --mkdir -o subvol=@home,compress=zstd:3,noatime /dev/vg0/root /mnt/home",
+                     "mount --mkdir -o subvol=@home,compress=zstd:3 /dev/vg0/root /mnt/home",
                      "mv /btrfs-top/@/.snapshots /btrfs-top/@snapshots",
                      "sgdisk -n 1:0:+8G -t 1:ef00 -c 1:EFI /dev/nvme0n1",
                      "ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf",

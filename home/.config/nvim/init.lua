@@ -7,8 +7,9 @@ vim.opt.expandtab = true
 
 vim.opt.termguicolors = false
 
-vim.cmd("packadd mini.pairs")
-require("mini.pairs").setup()
+if pcall(vim.cmd, "packadd mini.pairs") then
+	require("mini.pairs").setup()
+end
 
 vim.opt.langmap = table.concat({
   "ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ",

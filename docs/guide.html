@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arch: гайд 4.1</title>
+<style>
+:root{--bg:#f4f3ef;--panel:#fff;--ink:#1b1d21;--mute:#626873;--line:#d9d7d0;--acc:#1f6b57;--accbg:#e1efe9;--code:#ebe9e3;--warn:#8a5a00;--warnbg:#fbf0d9;--star:#9a5f08;--starbg:#fbefd8;--k:#8a3a7d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1114;--panel:#171a1f;--ink:#dcdcd6;--mute:#8d939d;--line:#272b32;--acc:#7cc4ad;--accbg:#183029;--code:#0b0d10;--warn:#e3b45c;--warnbg:#2f270f;--star:#e8b865;--starbg:#2f250e;--k:#d49bc9}}
+:root[data-theme="dark"]{--bg:#0f1114;--panel:#171a1f;--ink:#dcdcd6;--mute:#8d939d;--line:#272b32;--acc:#7cc4ad;--accbg:#183029;--code:#0b0d10;--warn:#e3b45c;--warnbg:#2f270f;--star:#e8b865;--starbg:#2f250e;--k:#d49bc9}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.fh,button.cp{font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+.wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:32px;max-width:1220px;margin:0 auto;padding:0 16px}
+nav{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:24px 0;font-size:14px}
+nav h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:18px 0 6px;font-weight:600}
+nav a{display:block;color:var(--ink);text-decoration:none;padding:2px 8px;border-left:2px solid var(--line)}
+nav a:hover{border-color:var(--acc);color:var(--acc)}
+main{padding:24px 0 90px;min-width:0}
+h1{font-size:34px;line-height:1.2;margin:0 0 8px}
+h2.s{font-size:24px;margin:44px 0 6px;padding-top:14px;border-top:1px solid var(--line)}
+h2.part{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin:68px 0 -26px}
+h3{font-size:17px;margin:24px 0 6px}
+p,li{max-width:82ch}
+.lead{color:var(--mute);font-size:17px}
+.tag{font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;display:inline-block;white-space:nowrap;vertical-align:1px}
+.t-my{background:var(--starbg);color:var(--star)}.t-var{background:var(--accbg);color:var(--acc)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin:14px 0}
+.box.warn{background:var(--warnbg);border-color:transparent;color:var(--warn)}
+.box.my{background:var(--starbg);border-color:transparent}
+.box>:first-child{margin-top:0}.box>:last-child{margin-bottom:0}
+.links{font-size:13.5px;color:var(--mute);margin:4px 0 10px}
+.links a{color:var(--acc);text-decoration:none;border-bottom:1px dotted var(--acc)}
+.links b{color:var(--mute);font-weight:600}
+a{color:var(--acc)}
+/* configurator */
+.cfg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.cfg .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:8px 0}
+.cfg .row>span{min-width:170px;font:13px ui-monospace,Menlo,monospace;color:var(--mute)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--bg);color:var(--ink);padding:5px 11px;font-size:13px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){.seg button.on{color:#0b0d10}}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.presets button{border:1px solid var(--acc);background:none;color:var(--acc);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:13px}
+.presets button:hover{background:var(--accbg)}
+.hint{font-size:13px;color:var(--mute);margin:2px 0}
+.vars{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.vars label{font-size:12px;color:var(--mute);display:block;font-family:ui-monospace,Menlo,monospace}
+.vars input{width:100%;font:14px ui-monospace,Menlo,monospace;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.v{color:var(--acc);font-weight:600}
+/* code */
+pre{position:relative;background:var(--code);border:1px solid var(--line);border-radius:8px;padding:11px 14px;overflow-x:auto;font:13.5px/1.5 ui-monospace,"JetBrains Mono",Menlo,monospace;margin:8px 0}
+code{font:0.9em ui-monospace,"JetBrains Mono",Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+pre code{background:none;padding:0}
+.c{color:var(--mute)}
+.file{margin:10px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--code)}
+.file .fh{display:flex;justify-content:space-between;gap:10px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--mute)}
+.file .fh em{font-style:normal;color:var(--k)}
+.file pre{margin:0;border:0;border-radius:0}
+button.cp{position:absolute;top:6px;right:6px;font-size:11px;border:1px solid var(--line);background:var(--panel);color:var(--mute);border-radius:6px;padding:1px 8px;cursor:pointer}
+button.cp:hover{color:var(--acc);border-color:var(--acc)}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14.5px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--panel)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:12px 0}
+.opt{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.opt.my{border-color:var(--star)}
+.opt h4{margin:0 0 4px;font-size:14.5px}
+.opt p{margin:4px 0;font-size:14px}
+.hide{display:none!important}
+.top{display:flex;justify-content:flex-end}
+#theme{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px}
+@media (max-width:860px){.wrap{display:block}nav{position:static;max-height:none;padding:12px 0;border-bottom:1px solid var(--line)}h1{font-size:25px}.cfg .row>span{min-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+<h2>Начало</h2>
+<a href="#how">Как пользоваться</a>
+<a href="#card">Карточка установки</a>
+<h2>Часть I · база до TTY</h2>
+<a href="#s1">1 · ISO, проверка</a>
+<a href="#s2">2 · Флешка</a>
+<a href="#s3">3 · Live-среда</a>
+<a href="#s4">4 · Сеть и зеркала</a>
+<a href="#s5">5 · Осмотр диска</a>
+<a href="#s6">6 · Разметка fdisk</a>
+<a href="#s7">7 · Шифрование, LVM, ФС</a>
+<a href="#s8">8 · Монтирование</a>
+<a href="#s9">9 · pacstrap, Snapper, fstab</a>
+<a href="#s10">10 · chroot: система</a>
+<a href="#s11">11 · initramfs и UKI</a>
+<a href="#s12">12 · Загрузчик</a>
+<a href="#s13">13 · Пользователь, сеть</a>
+<a href="#s14">14 · Swap, zram, сон</a>
+<a href="#s15">15 · Первая загрузка</a>
+<h2>Часть II · комфортный TTY</h2>
+<a href="#t1">16 · Консоль</a>
+<a href="#t2">17 · fish из .bashrc</a>
+<a href="#t3">18 · Пакеты и pacman</a>
+<a href="#t4">19 · Инструменты</a>
+<a href="#t5">20 · Файрвол</a>
+<a href="#t6">21 · SSH (по желанию)</a>
+<a href="#t7">22 · Ly</a>
+<a href="#t8">23 · База готова</a>
+<h2>Часть III · графика</h2>
+<a href="#g1">24 · Выбор пути</a>
+<a href="#g2">25 · Свой путь</a>
+<a href="#g3">26 · Путь zen</a>
+<a href="#g4">27 · Профиль машины</a>
+<a href="#g5">28 · deploy и zen apply</a>
+<a href="#g6">29 · Проверка, откат</a>
+<h2>Приложения</h2>
+<a href="#a1">A · Не публиковать</a>
+<a href="#a2">B · Восстановление</a>
+<a href="#a3">C · Источники</a>
+</nav>
+<main>
+<div class="top"><button id="theme" type="button">тема</button></div>
+<h1>Arch Linux: гайд 4.1</h1>
+<p class="lead">От пустого диска до комфортной консоли, затем по желанию графика. Гайд общий, как ArchWiki: у каждого шага есть варианты, объяснение и ссылка, где копнуть глубже. Мой путь ★ проведён через весь текст: если идти только по ★, получится моя база один в один.</p>
+
+<h2 class="s" id="how">Как пользоваться</h2>
+<p>Варианты показаны рядом: на каждой развилке выбери один (★ мой) и пропусти остальные. Три части:</p>
+<ol>
+<li><b>I · База до TTY.</b> Чистая установка Arch руками до входа в консоль.</li>
+<li><b>II · Комфортный TTY.</b> Шрифт, fish, инструменты, файрвол, Ly. Всё руками, без скриптов. Это «моя база», воспроизводимая одинаково на любой машине.</li>
+<li><b>III · Графика.</b> Любая своя среда или мой путь: Niri и GUI с настройками, палитрой и цветами консоли одним <code>deploy.sh</code>.</li>
+</ol>
+<table>
+<tr><th>Метка</th><th>Значит</th></tr>
+<tr><td><span class="tag t-my">★ мой выбор</span></td><td>решение, которое использую я. Все ★ совместимы друг с другом</td></tr>
+<tr><td><span class="tag t-var">вариант</span></td><td>равноправная альтернатива с пояснением, когда её брать</td></tr>
+<tr><td><span class="links"><b>Wiki:</b> ссылка</span></td><td>раздел ArchWiki по теме. Гайд не заменяет вики: если что-то непонятно, иди туда</td></tr>
+</table>
+<div class="box warn"><p><b>Диск будет стёрт.</b> Команды разрушают данные выбранного диска. Если на нём есть другая ОС, не трогай чужие разделы и ESP (см. шаг 5). Каждый шаг проверяй через <code>lsblk -f</code>. Не публикуй UUID, пароли, имена машин и пользователей (приложение A).</p></div>
+
+<h2 class="s" id="card">Карточка установки</h2>
+<p>Заполни один раз: значения подставятся во все команды ниже (они подсвечены цветом). Ничего не сохраняется и не отправляется.</p>
+<div class="box vars">
+<div><label>диск (<code>lsblk</code>)</label><input id="k-DISK" data-k="DISK" value="/dev/nvme0n1"></div>
+<div><label>имя машины</label><input data-k="HOST" value="archbox"></div>
+<div><label>пользователь</label><input data-k="USER" value="user"></div>
+<div><label>часовой пояс</label><input data-k="TZ" value="Europe/Moscow"></div>
+<div><label>размер ESP</label><input data-k="ESP" value="1G"></div>
+<div><label>размер swap (≥ ОЗУ для сна)</label><input data-k="SWAP" value="16G"></div>
+<div><label>микрокод (amd-ucode / intel-ucode)</label><input data-k="UCODE" value="amd-ucode"></div>
+</div>
+<p class="hint">Раздел ESP: <code>{{P1}}</code>, системный раздел: <code>{{P2}}</code>. У NVMe и MMC добавляется <code>p</code>.</p>
+
+<h2 class="part">Часть I · база до TTY</h2>
+
+<h2 class="s" id="s1">1 · ISO и проверка</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Installation_guide#Acquire_an_installation_image">Installation guide: Acquire an installation image</a></div>
+<p>Образ берётся только с archlinux.org/download: через magnet-ссылку (торрент проверяет части сам) либо с зеркала. Сохрани рядом файл подписи <code>.sig</code> <b>с официальной страницы</b>, не с произвольного зеркала.</p>
+<pre><code>gpg --verify archlinux-YYYY.MM.DD-x86_64.iso.sig archlinux-YYYY.MM.DD-x86_64.iso</code></pre>
+<p>Ожидается <code>Good signature</code>, а отпечаток ключа должен совпасть с опубликованным на странице загрузки. Предупреждение «ключ не доверенный» само по себе не означает подделку, но отпечаток сверить нужно. Если ключа нет, его получают по WKD (команда есть на странице загрузки). Контрольные суммы:</p>
+<pre><code>sha256sum archlinux-YYYY.MM.DD-x86_64.iso
+b2sum archlinux-YYYY.MM.DD-x86_64.iso</code></pre>
+<div class="box warn"><p>Не продолжай, если подпись не проверяется, отпечаток другой или сумма не совпадает: удали файлы и скачай заново.</p></div>
+
+<h2 class="s" id="s2">2 · Запись на флешку</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/USB_flash_installation_medium">USB flash installation medium</a> <b>· углубиться:</b> варианты для Windows и Ventoy</div>
+<p>Запись идёт на <b>весь диск флешки</b>, не на раздел, и стирает всё на ней. Образ Arch это готовый образ диска: форматировать флешку заранее не нужно.</p>
+<pre><code>lsblk -o NAME,PATH,SIZE,MODEL,TRAN,TYPE,FSTYPE,MOUNTPOINTS      <span class="c"># найди флешку: TRAN=usb, размер, модель</span>
+sudo umount /dev/sdX1                                             <span class="c"># размонтируй все её разделы</span></code></pre>
+<p>Сначала только показываем, что собираемся сделать, и перепроверяем:</p>
+<pre><code>ISO="$HOME/Downloads/archlinux-YYYY.MM.DD-x86_64.iso"
+USB=/dev/sdX
+printf 'ISO: %s\nUSB: %s\n' "$ISO" "$USB"
+ls -lh "$ISO"
+lsblk -o NAME,PATH,SIZE,MODEL,TRAN,TYPE,MOUNTPOINTS "$USB"</code></pre>
+<p><code>/dev/sdX1</code> это раздел, использовать нельзя; буквальный <code>X</code> тоже. Только потом:</p>
+<pre><code>sudo dd if="$ISO" of="$USB" bs=4M status=progress oflag=sync
+sync
+sudo eject "$USB"</code></pre>
+<p>Ошибка в <code>of=</code> стирает другой накопитель без вопросов. Не вынимай флешку до возврата приглашения.</p>
+<div class="opts">
+<div class="opt my"><h4><span class="tag t-my">★</span> dd на Linux</h4><p>Проверяемый, ничего лишнего.</p></div>
+<div class="opt"><h4><span class="tag t-var">вариант</span> Windows</h4><p>Rufus в режиме «DD-образ» или Ventoy (несколько ISO на одной флешке).</p></div>
+</div>
+
+<h2 class="s" id="s3">3 · Загрузка live-среды и проверка</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Installation_guide#Boot_the_live_environment">Boot the live environment</a> · <a href="https://wiki.archlinux.org/title/Installation_guide#Verify_the_boot_mode">Verify the boot mode</a></div>
+<p>Открой меню загрузки прошивки и выбери флешку с пометкой UEFI. Официальный ISO не грузится с включённым Secure Boot: на время установки отключи его (ключи прошивки не удаляй). В меню выбери <i>Arch Linux install medium</i>: откроется root-оболочка, устанавливаемой системы ещё нет.</p>
+<pre><code>cat /sys/firmware/efi/fw_platform_size       <span class="c"># 64 = UEFI x64; файла нет = загрузились в BIOS, перезагрузись в UEFI</span>
+loadkeys us                                  <span class="c"># раскладка (список: localectl list-keymaps)</span>
+setfont ter-v20n                             <span class="c"># крупнее, если экран HiDPI</span>
+timedatectl set-ntp true
+timedatectl status
+lsblk -o NAME,PATH,SIZE,MODEL,TRAN,TYPE,FSTYPE,MOUNTPOINTS
+lspci -nn; lsusb</code></pre>
+<p>Запиши точную модель целевого накопителя. Если диска не видно, не размечай «похожий»: проверь режим контроллера (AHCI/RAID) в прошивке.</p>
+
+<h2 class="s" id="s4">4 · Сеть и зеркала</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Installation_guide#Connect_to_the_internet">Connect to the internet</a> · <a href="https://wiki.archlinux.org/title/Iwd">iwd</a> · <a href="https://wiki.archlinux.org/title/Mirrors">Mirrors</a> · <a href="https://wiki.archlinux.org/title/Reflector">Reflector</a></div>
+<div class="opts">
+<div class="opt"><h4><span class="tag t-var">вариант</span> Ethernet</h4><p>Обычно поднимается сам.</p></div>
+<div class="opt my"><h4><span class="tag t-my">★</span> Wi-Fi через iwctl</h4><pre><code>iwctl
+[iwd]# device list
+[iwd]# station wlan0 scan
+[iwd]# station wlan0 get-networks
+[iwd]# station wlan0 connect "&lt;SSID&gt;"
+[iwd]# exit</code></pre></div>
+<div class="opt"><h4><span class="tag t-var">вариант</span> Телефон по USB</h4><p>USB-модем в телефоне даёт сетевой интерфейс.</p></div>
+</div>
+<pre><code>ip link
+ping -c3 archlinux.org</code></pre>
+<p>Сеть live-среды не переносится в установленную систему: её настраивают отдельно (шаг 13). Если сети нужны прокси, captive portal или статический адрес, настрой это сначала.</p>
+<h3>Зеркала</h3>
+<p>Пакеты берутся из <code>/etc/pacman.d/mirrorlist</code>; список копируется в новую систему. Обычно хватает образа. Если качает медленно:</p>
+<pre><code>reflector --country &lt;СТРАНА&gt; --protocol https --latest 20 --sort rate --save /etc/pacman.d/mirrorlist</code></pre>
+
+<h2 class="s" id="s5">5 · Осмотр диска перед разметкой</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Dm-crypt/Drive_preparation">dm-crypt/Drive preparation</a> (безопасное стирание) · <a href="https://wiki.archlinux.org/title/Solid_state_drive/Memory_cell_clearing">SSD memory cell clearing</a></div>
+<pre><code>lsblk -o NAME,SIZE,MODEL,TYPE,FSTYPE,MOUNTPOINTS {{DISK}}
+fdisk -l {{DISK}}</code></pre>
+<p>Убедись, что в карточке указан именно тот диск, по модели и размеру.</p>
+<div class="opts">
+<div class="opt my"><h4><span class="tag t-my">★</span> Чистая установка на весь диск</h4><p>Таблица создаётся заново, старое пропадает.</p></div>
+<div class="opt"><h4><span class="tag t-var">вариант</span> Рядом с другой ОС</h4><p>Не пересоздавай таблицу и не форматируй существующий ESP: смонтируй его в <code>/efi</code>, а под систему добавь раздел в свободном месте. Резервная копия обязательна.</p></div>
+</div>
+<p>Старые подписи файловых систем лучше убрать, чтобы они не конфликтовали:</p>
+<pre><code>wipefs -a {{DISK}}                  <span class="c"># только для чистой установки на весь диск</span></code></pre>
+<p class="hint">Для LUKS можно ещё перезаписать диск случайными данными (медленно, нужно только если важна скрытность занятого места): см. wiki «Drive preparation».</p>
+
+<h2 class="s" id="s6">6 · Разметка (fdisk)</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Fdisk">fdisk</a> · <a href="https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks">Partition the disks</a> · <a href="https://wiki.archlinux.org/title/EFI_system_partition">EFI system partition</a></div>
+<p>GPT, два раздела: <b>ESP</b> и один раздел под всё остальное (при шифровании он будет зашифрован, без шифрования в нём сразу файловая система или LVM). Остальное делится уже внутри (LVM, подтома), поэтому на диске больше ничего не нужно.</p>
+<pre><code>fdisk {{DISK}}</code></pre>
+<table>
+<tr><th>В fdisk</th><th>Что делает</th></tr>
+<tr><td><code>g</code></td><td>новая GPT (на диске с другой ОС этот шаг пропусти)</td></tr>
+<tr><td><code>n</code>, Enter, Enter, <code>+{{ESP}}</code></td><td>раздел 1 (ESP)</td></tr>
+<tr><td><code>t</code>, <code>1</code>, <code>uefi</code></td><td>тип «EFI System»</td></tr>
+<tr><td><code>n</code>, Enter, Enter, Enter</td><td>раздел 2 на остаток диска</td></tr>
+<tr><td><code>t</code>, <code>2</code>, <code>L</code>, выбери <i>Linux LUKS</i> (с шифрованием)</td><td>необязательно: подпись для порядка. По умолчанию <i>Linux filesystem</i> тоже работает</td></tr>
+<tr><td><code>t</code>, <code>2</code>, <code>lvm</code> (без шифрования, но с LVM)</td><td>тип «Linux LVM»</td></tr>
+<tr><td><code>p</code></td><td>проверь таблицу</td></tr>
+<tr><td><code>w</code></td><td>записать. До <code>w</code> диск не тронут (<code>q</code> выйти без записи)</td></tr>
+</table>
+<p>Тот же результат без диалога:</p>
+<pre><code>fdisk {{DISK}} &lt;&lt;EOF
+g
+n
+1
+
++{{ESP}}
+t
+uefi
+n
+2
+
+
+w
+EOF
+lsblk -f {{DISK}}
+mkfs.fat -F 32 -n ESP {{P1}}</code></pre>
+<p>Размер ESP: 1 GiB хватает для двух UKI (каждый 100-200 МиБ) и загрузчика. Больше нужно только если на неё кладутся другие загрузчики.</p>
+<div class="box warn"><p>Раздел swap создаётся <b>не здесь</b>, а внутри LVM (шаг 7): так его размер потом можно менять. Поэтому для гибернации нужен LVM.</p></div>
+
+<h2 class="s" id="s7">7 · Шифрование, LVM и файловая система</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Dm-crypt">dm-crypt</a> · <a href="https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system">Encrypting an entire system</a> · <a href="https://wiki.archlinux.org/title/LVM">LVM</a> · <a href="https://wiki.archlinux.org/title/Btrfs">Btrfs</a> · <a href="https://wiki.archlinux.org/title/File_systems">File systems</a></div>
+<p>Выбери одну схему. Три первых шифруют раздел LUKS2, различается то, что внутри; четвёртая без шифрования.</p>
+<div class="opts">
+<div class="opt"><h4><span class="tag t-var">A</span> LUKS → ext4</h4><p>Самое простое. Один том, легко восстанавливать. Нет снимков и отдельного swap-тома.</p></div>
+<div class="opt"><h4><span class="tag t-var">B</span> LUKS → LVM → ext4</h4><p>Размеры томов (swap, root) можно менять позже. Нужен хук <code>lvm2</code>.</p></div>
+<div class="opt my"><h4><span class="tag t-my">★ C</span> LUKS → LVM → Btrfs</h4><p>Подтома, сжатие, мгновенные снимки Snapper: система откатывается, а <code>/home</code> остаётся. Мой выбор; дальше он описан подробнее всех.</p></div>
+<div class="opt"><h4><span class="tag t-var">D</span> Без шифрования</h4><p>Для виртуальной машины, стенда, стационарного компьютера в защищённом помещении. Пропускаешь шаг LUKS и вместо <code>/dev/mapper/cryptlvm</code> используешь <code>{{P2}}</code>. На ноутбуке потеря устройства означает потерю данных; шифрование позже без пересоздания разделов не добавить.</p></div>
+</div>
+<h3>Общий шаг: открыть LUKS (A, B, C)</h3>
+<pre><code>cryptsetup luksFormat --type luks2 {{P2}}
+cryptsetup open {{P2}} cryptlvm</code></pre>
+<p>Имя <code>cryptlvm</code> одно во всех вариантах: оно будет в параметрах ядра. Пароль запомни, без него данные не прочитать. ESP остаётся незашифрованным: прошивка должна его читать.</p>
+<h3>Вариант A: ext4 прямо в LUKS</h3>
+<pre><code>mkfs.ext4 -L ROOT /dev/mapper/cryptlvm</code></pre>
+<h3>Вариант B: LVM + ext4</h3>
+<pre><code>pvcreate /dev/mapper/cryptlvm
+vgcreate vg0 /dev/mapper/cryptlvm
+lvcreate -L {{SWAP}} -n swap vg0           <span class="c"># если нужен дисковый swap (гибернация)</span>
+lvcreate -l 100%FREE -n root vg0
+mkfs.ext4 -L ROOT /dev/vg0/root
+mkswap -L SWAP /dev/vg0/swap</code></pre>
+<h3><span class="tag t-my">★</span> Вариант C: LVM + Btrfs</h3>
+<pre><code>pvcreate /dev/mapper/cryptlvm
+vgcreate vg0 /dev/mapper/cryptlvm
+lvcreate -L {{SWAP}} -n swap vg0
+lvcreate -l 100%FREE -n root vg0
+mkfs.btrfs -L MASTER /dev/vg0/root
+mkswap -L SWAP /dev/vg0/swap
+
+mount /dev/vg0/root /mnt
+for s in @ @home @var_log @var_cache; do btrfs subvolume create /mnt/$s; done
+umount /mnt</code></pre>
+<p>Подтома: <code>@</code> (корень), <code>@home</code> (личные данные: откат системы их не трогает), <code>@var_log</code> и <code>@var_cache</code> (логи и кэш не попадают в снимки). Пятый, <code>@snapshots</code>, появится на шаге 9. Дисковый swap отдельным LVM-томом нужен для гибернации: его размер должен быть не меньше ОЗУ. Если гибернация не нужна, делай swap-том меньше или полагайся только на zram.</p>
+
+<h2 class="s" id="s8">8 · Монтирование</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Installation_guide#Mount_the_file_systems">Mount the file systems</a> · <a href="https://wiki.archlinux.org/title/Btrfs#Mounting_subvolumes">Btrfs: mounting subvolumes</a></div>
+<h3>Вариант A (ext4 в LUKS)</h3>
+<pre><code>mount /dev/mapper/cryptlvm /mnt
+mount --mkdir -o fmask=0077,dmask=0077 {{P1}} /mnt/efi</code></pre>
+<h3>Вариант B (LVM, ext4)</h3>
+<pre><code>mount /dev/vg0/root /mnt
+mount --mkdir -o fmask=0077,dmask=0077 {{P1}} /mnt/efi
+swapon /dev/vg0/swap</code></pre>
+<h3><span class="tag t-my">★</span> Вариант C (LVM, Btrfs)</h3>
+<pre><code>O=compress=zstd:3
+mount -o subvol=@,$O /dev/vg0/root /mnt
+mount --mkdir -o subvol=@home,$O      /dev/vg0/root /mnt/home
+mount --mkdir -o subvol=@var_log,$O   /dev/vg0/root /mnt/var/log
+mount --mkdir -o subvol=@var_cache,$O /dev/vg0/root /mnt/var/cache
+mount --mkdir -o fmask=0077,dmask=0077 {{P1}} /mnt/efi
+swapon /dev/vg0/swap</code></pre>
+<p><code>compress=zstd:3</code> экономит место почти бесплатно для процессора; <code>relatime</code> остаётся по умолчанию. ESP монтируется с <code>fmask/dmask 0077</code>: обычные пользователи не читают загрузочный раздел. Без шифрования вместо <code>/dev/mapper/cryptlvm</code> используй <code>{{P2}}</code>.</p>
+
+<h2 class="s" id="s9">9 · pacstrap, Snapper и fstab</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Installation_guide#Install_essential_packages">Install essential packages</a> · <a href="https://wiki.archlinux.org/title/Snapper">Snapper</a> · <a href="https://wiki.archlinux.org/title/Fstab">fstab</a></div>
+<h3>Состав системы</h3>
+<table>
+<tr><th>Пакеты</th><th>Зачем</th><th>Когда</th></tr>
+<tr><td><code>base linux linux-firmware</code></td><td>система, ядро, прошивки</td><td>всегда</td></tr>
+<tr><td><code>linux-lts</code></td><td>запасное ядро: заменяет fallback-образ, если свежее ядро сломает загрузку</td><td><span class="tag t-my">★</span></td></tr>
+<tr><td><code>{{UCODE}}</code></td><td>микрокод CPU</td><td>всегда</td></tr>
+<tr><td><code>mkinitcpio</code></td><td>сборка initramfs и UKI</td><td>всегда</td></tr>
+<tr><td><code>cryptsetup</code></td><td>шифрование</td><td>A, B, C</td></tr>
+<tr><td><code>lvm2</code></td><td>LVM</td><td>B, C</td></tr>
+<tr><td><code>btrfs-progs snapper</code></td><td>Btrfs и снимки</td><td>C</td></tr>
+<tr><td><code>limine</code></td><td>загрузчик (systemd-boot уже входит в systemd)</td><td><span class="tag t-my">★</span> Limine</td></tr>
+<tr><td><code>efibootmgr dosfstools</code></td><td>запись в UEFI, FAT</td><td>всегда</td></tr>
+<tr><td><code>networkmanager</code></td><td>сеть установленной системы</td><td><span class="tag t-my">★</span></td></tr>
+<tr><td><code>sudo neovim git base-devel man-db man-pages</code></td><td>минимум для работы и справки</td><td>всегда</td></tr>
+<tr><td><code>zram-generator</code></td><td>сжатый swap в ОЗУ</td><td><span class="tag t-my">★</span></td></tr>
+<tr><td><code>terminus-font</code></td><td>шрифт консоли</td><td><span class="tag t-my">★</span></td></tr>
+</table>
+<p><span class="tag t-my">★ C</span> моя полная команда:</p>
+<pre><code>pacstrap -K /mnt base linux linux-lts linux-firmware {{UCODE}} mkinitcpio \
+  cryptsetup lvm2 btrfs-progs snapper limine efibootmgr dosfstools networkmanager \
+  sudo neovim git base-devel man-db man-pages zram-generator terminus-font</code></pre>
+<p>Под другую схему убери ненужное: для A и B <code>btrfs-progs snapper</code> (A ещё и <code>lvm2</code>), для D <code>cryptsetup</code>; для systemd-boot убери <code>limine</code>; без запасного ядра убери <code>linux-lts</code>.</p>
+<div>
+<h3>Snapper до fstab</h3>
+<p>Snapper при создании конфига делает вложенный подтом <code>.snapshots</code> внутри <code>@</code>. Нам нужен отдельный <code>@snapshots</code> рядом, чтобы откат <code>@</code> не уничтожил снимки. Поэтому конфиг создаётся сейчас, а подтом переезжает (<code>snap-pac</code> в chroot не ставим: его хук падает без работающего Snapper).</p>
+<pre><code>arch-chroot /mnt snapper --no-dbus -c root create-config /
+mkdir /btrfs-top
+mount -o subvolid=5 /dev/vg0/root /btrfs-top
+mv /btrfs-top/@/.snapshots /btrfs-top/@snapshots
+umount /btrfs-top; rmdir /btrfs-top
+mkdir /mnt/.snapshots
+mount -o subvol=@snapshots,compress=zstd:3 /dev/vg0/root /mnt/.snapshots
+chmod 750 /mnt/.snapshots</code></pre>
+<p class="hint">На ArchWiki тот же результат на уже работающей системе достигается так: размонтировать и удалить каталог <code>/.snapshots</code>, выполнить <code>snapper -c root create-config /</code>, затем смонтировать <code>@snapshots</code> на <code>/.snapshots</code> (fstab) и поставить права 750.</p>
+</div>
+<h3>fstab</h3>
+<pre><code>genfstab -U /mnt &gt; /mnt/etc/fstab
+nvim /mnt/etc/fstab</code></pre>
+<p>Что проверить: у swap (если есть) добавь <code>pri=10</code> (zram получает 100 и используется первым), у ESP остаются <code>fmask=0077,dmask=0077</code>. Примеры строк (UUID у каждого свои, <b>не публикуй</b>):</p>
+<p><span class="tag t-my">★ C</span> Btrfs:</p>
+<div class="file"><div class="fh"><span>/etc/fstab</span><em>fstab</em></div><pre><code>UUID=&lt;root&gt;  /            btrfs  rw,relatime,compress=zstd:3,subvol=/@           0 0
+UUID=&lt;root&gt;  /home        btrfs  rw,relatime,compress=zstd:3,subvol=/@home       0 0
+UUID=&lt;root&gt;  /var/log     btrfs  rw,relatime,compress=zstd:3,subvol=/@var_log    0 0
+UUID=&lt;root&gt;  /var/cache   btrfs  rw,relatime,compress=zstd:3,subvol=/@var_cache  0 0
+UUID=&lt;root&gt;  /.snapshots  btrfs  rw,relatime,compress=zstd:3,subvol=/@snapshots  0 0
+UUID=&lt;esp&gt;   /efi         vfat   rw,relatime,fmask=0077,dmask=0077               0 2
+UUID=&lt;swap&gt;  none         swap   defaults,pri=10                                 0 0</code></pre></div>
+<p>A и B (ext4):</p>
+<div class="file"><div class="fh"><span>/etc/fstab</span><em>fstab</em></div><pre><code>UUID=&lt;root&gt;  /      ext4  rw,relatime                            0 1
+UUID=&lt;esp&gt;   /efi   vfat  rw,relatime,fmask=0077,dmask=0077    0 2
+UUID=&lt;swap&gt;  none   swap  defaults,pri=10                      0 0     <span class="c"># только если есть swap-том</span></code></pre></div>
+<p class="hint"><code>genfstab</code> сам добавит <code>ssd,discard=async,space_cache=v2</code> и номер подтома: оставляй.</p>
+
+<h2 class="s" id="s10">10 · Вход в систему: время, локаль, имя</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Installation_guide#Configure_the_system">Configure the system</a> · <a href="https://wiki.archlinux.org/title/Locale">Locale</a> · <a href="https://wiki.archlinux.org/title/Linux_console/Keyboard_configuration">Keyboard configuration</a> · <a href="https://wiki.archlinux.org/title/Linux_console#Fonts">Console fonts</a></div>
+<pre><code>arch-chroot /mnt
+ln -sf /usr/share/zoneinfo/{{TZ}} /etc/localtime
+hwclock --systohc
+sed -i 's/^#\(en_US.UTF-8 UTF-8\)/\1/; s/^#\(ru_RU.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+locale-gen
+echo {{HOST}} &gt; /etc/hostname</code></pre>
+<div class="file"><div class="fh"><span>/etc/locale.conf</span><em>conf</em></div><pre><code>LANG=en_US.UTF-8</code></pre></div>
+<div class="file"><div class="fh"><span>/etc/vconsole.conf</span><em>conf</em></div><pre><code>KEYMAP=us
+FONT=ter-v20n</code></pre></div>
+<p><span class="tag t-my">★</span> Язык системы английский (проще искать ошибки), русская локаль сгенерирована для приложений. Файл <code>vconsole.conf</code> читает хук <code>sd-vconsole</code>: шрифт и раскладка работают уже на запросе пароля. <code>ter-v16n</code> мельче, <code>ter-v24n</code> и <code>ter-v32n</code> для HiDPI.</p>
+
+<h2 class="s" id="s11">11 · initramfs и UKI</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Mkinitcpio">mkinitcpio</a> · <a href="https://wiki.archlinux.org/title/Unified_kernel_image">Unified kernel image</a> · <a href="https://wiki.archlinux.org/title/Kernel_parameters">Kernel parameters</a></div>
+<p>UKI (Unified Kernel Image) склеивает ядро, initramfs и командную строку в один файл на ESP. Загрузчик просто запускает его; отдельные образы в <code>/boot</code> не нужны. Для UKI используем <b>systemd-initramfs</b> (хук <code>systemd</code> вместо <code>udev</code>): он же даёт запрос пароля, <code>sd-vconsole</code> и возобновление после гибернации без отдельного хука <code>resume</code>.</p>
+<h3>Хуки</h3>
+<table>
+<tr><th>Схема</th><th>HOOKS</th></tr>
+<tr><td>A (LUKS, ext4)</td><td><code>(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt filesystems fsck)</code></td></tr>
+<tr><td>B, <span class="tag t-my">★ C</span> (LVM)</td><td><code>(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt lvm2 filesystems fsck)</code></td></tr>
+<tr><td>D (без шифрования, без LVM)</td><td><code>(base systemd autodetect microcode modconf kms keyboard sd-vconsole block filesystems fsck)</code></td></tr>
+</table>
+<div class="file"><div class="fh"><span>/etc/mkinitcpio.conf</span><em>conf</em></div><pre><code>MODULES=()
+BINARIES=()
+FILES=()
+HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt lvm2 filesystems fsck)</code></pre></div>
+<p>Порядок важен: сначала <code>sd-vconsole</code>, потом <span><code>sd-encrypt</code> (открывает LUKS)</span><span> и после него <code>lvm2</code> (активирует тома)</span>, затем <code>filesystems</code>. <span>ArchWiki для systemd-initramfs называет LVM-хук <code>sd-lvm2</code>; у меня стабильно работает <code>lvm2</code> (так же в гайде 2.2). Оба варианта допустимы, сверяйся с <a href="https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system">wiki</a>, если что-то обновится.</span></p>
+<h3>Параметры ядра</h3>
+<p>UUID берём у <b>LUKS-раздела</b> (не у файловой системы внутри него): <code>cryptsetup luksUUID {{P2}}</code>. Для схемы без шифрования и без LVM нужен UUID корня: <code>blkid {{P2}}</code>.</p>
+<p><b>A</b> (LUKS, ext4):</p>
+<div class="file"><div class="fh"><span>/etc/kernel/cmdline</span><em>одна строка</em></div><pre><code>rd.luks.name=&lt;UUID-LUKS&gt;=cryptlvm root=/dev/mapper/cryptlvm rw quiet loglevel=3</code></pre></div>
+<p><b>B</b> (LUKS, LVM, ext4):</p>
+<div class="file"><div class="fh"><span>/etc/kernel/cmdline</span><em>одна строка</em></div><pre><code>rd.luks.name=&lt;UUID-LUKS&gt;=cryptlvm rd.lvm.lv=vg0/root root=/dev/vg0/root rw quiet loglevel=3</code></pre></div>
+<p><span class="tag t-my">★ C</span> (LUKS, LVM, Btrfs, гибернация):</p>
+<div class="file"><div class="fh"><span>/etc/kernel/cmdline</span><em>одна строка</em></div><pre><code>rd.luks.name=&lt;UUID-LUKS&gt;=cryptlvm rd.lvm.lv=vg0/root rd.lvm.lv=vg0/swap root=/dev/vg0/root rootflags=subvol=/@ rw resume=/dev/vg0/swap quiet loglevel=3 systemd.show_status=error rd.systemd.show_status=error rd.udev.log_level=3</code></pre></div>
+<p><b>D</b> (без шифрования и LVM): <code>root=UUID=&lt;UUID-ROOT&gt; rw quiet loglevel=3</code>. Без шифрования, но с LVM: как B без <code>rd.luks.name=</code>.</p>
+<p><code>quiet loglevel=3 …show_status=error</code> убирают шум загрузки; для отладки удали их. Пароль в cmdline не пишется никогда. <span><code>resume=</code> нужен только для гибернации.</span></p>
+<h3>Пресеты: только UKI</h3>
+<div class="file"><div class="fh"><span>/etc/mkinitcpio.d/linux.preset</span><em>preset</em></div><pre><code>ALL_kver="/boot/vmlinuz-linux"
+PRESETS=('default')
+
+default_uki="/efi/EFI/Linux/arch-linux.efi"
+default_options="--cmdline /etc/kernel/cmdline"</code></pre></div>
+<p class="hint">Если ставил запасное ядро LTS, нужен второй пресет:</p>
+<div>
+<div class="file"><div class="fh"><span>/etc/mkinitcpio.d/linux-lts.preset</span><em>preset</em></div><pre><code>ALL_kver="/boot/vmlinuz-linux-lts"
+PRESETS=('default')
+
+default_uki="/efi/EFI/Linux/arch-linux-lts.efi"
+default_options="--cmdline /etc/kernel/cmdline"</code></pre></div>
+</div>
+<pre><code>mkdir -p /efi/EFI/Linux
+mkinitcpio -P
+ls -lh /efi/EFI/Linux/</code></pre>
+<p>Старые пресеты с <code>default_image=</code> и <code>fallback</code> замени на строки выше: так в <code>/boot</code> не появятся лишние образы. Формат файла зависит от версии пакета, не заменяй чужой файл вслепую.</p>
+
+<h2 class="s" id="s12">12 · Загрузчик</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Arch_boot_process">Arch boot process</a> · <a href="https://wiki.archlinux.org/title/Limine">Limine</a> · <a href="https://wiki.archlinux.org/title/Systemd-boot">systemd-boot</a> · <a href="https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface#efibootmgr">efibootmgr</a></div>
+<h3>Вариант: systemd-boot</h3>
+<div>
+<p>systemd-boot сам находит UKI в <code>EFI/Linux</code> на ESP: отдельных записей создавать не надо.</p>
+<pre><code>bootctl --esp-path=/efi install
+bootctl --esp-path=/efi status
+systemctl enable systemd-boot-update.service</code></pre>
+<div class="file"><div class="fh"><span>/efi/loader/loader.conf</span><em>conf</em></div><pre><code>timeout 3
+console-mode max
+editor no</code></pre></div>
+<p><code>editor no</code> запрещает правку параметров ядра из меню: иначе любой у клавиатуры мог бы запустить систему с <code>init=/bin/sh</code>.</p>
+</div>
+<h3><span class="tag t-my">★</span> Limine</h3>
+<div>
+<p>Limine кладёт один файл <code>BOOTX64.EFI</code> на ESP, а конфиг <code>limine.conf</code> лежит в корне ESP. Копия в стандартный путь <code>EFI/BOOT</code> спасёт, если прошивка потеряет запись.</p>
+<pre><code>mkdir -p /efi/EFI/arch-limine /efi/EFI/BOOT
+install -Dm644 /usr/share/limine/BOOTX64.EFI /efi/EFI/arch-limine/BOOTX64.EFI
+install -Dm644 /usr/share/limine/BOOTX64.EFI /efi/EFI/BOOT/BOOTX64.EFI
+efibootmgr --create --disk {{DISK}} --part 1 \
+  --label "Arch Linux (Limine)" --loader '\EFI\arch-limine\BOOTX64.EFI' --unicode</code></pre>
+<p><code>--part 1</code> это номер ESP на диске (подставь свой, если не первый).</p>
+<div class="file"><div class="fh"><span>/efi/limine.conf</span><em>conf</em></div><pre><code>timeout: 5
+default_entry: 1
+editor_enabled: no
+
+/Arch Linux
+    protocol: efi
+    path: boot():/EFI/Linux/arch-linux.efi
+
+/Arch Linux LTS
+    protocol: efi
+    path: boot():/EFI/Linux/arch-linux-lts.efi</code></pre></div>
+<p>Блок «Arch Linux LTS» нужен, только если ставил запасное ядро.</p>
+<p><code>editor_enabled: no</code> запрещает правку параметров ядра из меню. Чтобы файл загрузчика обновлялся вместе с пакетом, нужен pacman-хук:</p>
+<div class="file"><div class="fh"><span>/etc/pacman.d/hooks/99-limine-efi.hook</span><em>hook</em></div><pre><code>[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = limine
+
+[Action]
+When = PostTransaction
+Exec = /usr/bin/install -Dm644 /usr/share/limine/BOOTX64.EFI /efi/EFI/arch-limine/BOOTX64.EFI</code></pre></div>
+</div>
+<p>Проверка: <code>efibootmgr -v</code> (запись и путь), <code>ls -lh /efi/EFI/Linux</code>. Если записи нет в меню прошивки, запусти запасной <code>\EFI\BOOT\BOOTX64.EFI</code>.</p>
+
+<h2 class="s" id="s13">13 · Пользователь, сеть и службы</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Users_and_groups">Users and groups</a> · <a href="https://wiki.archlinux.org/title/Sudo">sudo</a> · <a href="https://wiki.archlinux.org/title/NetworkManager">NetworkManager</a> · <a href="https://wiki.archlinux.org/title/Systemd-resolved">systemd-resolved</a> · <a href="https://wiki.archlinux.org/title/Systemd-timesyncd">systemd-timesyncd</a></div>
+<pre><code>passwd
+useradd -m -G wheel -s /bin/bash {{USER}}
+passwd {{USER}}
+EDITOR=nvim visudo           <span class="c"># раскомментируй строку: %wheel ALL=(ALL:ALL) ALL</span></code></pre>
+<p>Оболочка пока <code>bash</code>: fish подключим в части II через <code>.bashrc</code>, чтобы не остаться без рабочего входа.</p>
+<div class="opts">
+<div class="opt my"><h4><span class="tag t-my">★</span> NetworkManager + systemd-resolved</h4><p>Wi-Fi и VPN через <code>nmcli</code>, DNS отдельной службой.</p></div>
+<div class="opt"><h4><span class="tag t-var">вариант</span> systemd-networkd + iwd</h4><p>Легче и без NetworkManager, но Wi-Fi и VPN настраиваются руками. Для серверов.</p></div>
+</div>
+<pre><code>systemctl enable NetworkManager systemd-resolved systemd-timesyncd
+systemctl enable snapper-timeline.timer snapper-cleanup.timer     <span class="c"># только Btrfs (вариант C)</span></code></pre>
+<div class="file"><div class="fh"><span>/etc/NetworkManager/conf.d/dns.conf</span><em>conf</em></div><pre><code>[main]
+dns=systemd-resolved</code></pre></div>
+<p><code>/etc/resolv.conf</code> заменяется ссылкой <b>после выхода из chroot</b> (в chroot файл занят), это шаг 15.</p>
+<p>Только Btrfs: первый снимок «чистой системы» (в chroot).</p>
+<pre><code>snapper --no-dbus -c root create --description "Initial configured system"</code></pre>
+
+<h2 class="s" id="s14">14 · Swap, zram, гибернация</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Zram">Zram</a> · <a href="https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate">Suspend and hibernate</a> · <a href="https://wiki.archlinux.org/title/Swap">Swap</a></div>
+<div class="opts">
+<div class="opt my"><h4><span class="tag t-my">★</span> zram + дисковый swap</h4><p>zram для обычной работы (быстро), диск нужен для гибернации и переполнения. Размер не меньше ОЗУ.</p></div>
+<div class="opt"><h4><span class="tag t-var">вариант</span> Только zram</h4><p>Проще, без гибернации. Раздел swap не создаётся.</p></div>
+<div class="opt"><h4><span class="tag t-var">вариант</span> Swap-файл</h4><p>Гибернация возможна и без отдельного тома, но на Btrfs нужен свой подтом и <code>resume_offset</code>. См. wiki.</p></div>
+</div>
+<div class="file"><div class="fh"><span>/etc/systemd/zram-generator.conf</span><em>conf</em></div><pre><code>[zram0]
+zram-size = min(ram / 2, 8192)
+compression-algorithm = zstd
+swap-priority = 100</code></pre></div>
+<div>
+<h3>Гибернация и кнопки</h3>
+<p>В cmdline уже есть <code>resume=/dev/vg0/swap</code>; отдельный хук <code>resume</code> не нужен, потому что в initramfs стоит <code>systemd</code>.</p>
+<div class="file"><div class="fh"><span>/etc/systemd/logind.conf</span><em>conf</em></div><pre><code>[Login]
+HandlePowerKey=hibernate
+HandleLidSwitch=lock
+HandleLidSwitchExternalPower=lock
+HandleLidSwitchDocked=lock
+PowerKeyIgnoreInhibited=yes</code></pre></div>
+<div class="file"><div class="fh"><span>/etc/systemd/sleep.conf</span><em>conf</em></div><pre><code>[Sleep]
+AllowHibernation=yes
+HibernateMode=shutdown
+HibernateOnACPower=yes</code></pre></div>
+<p>Кнопка питания усыпляет на диск, крышка только блокирует экран (блокировку обеспечивает графическая часть: до неё крышка ничего не делает). Проверка: <code>sudo systemctl hibernate</code> на системе без несохранённой работы. Если не сработало: <code>journalctl -b -1 -u systemd-hibernate.service</code>. Гибернация зависит от прошивки и железа.</p>
+</div>
+
+<h2 class="s" id="s15">15 · Первая загрузка</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Installation_guide#Reboot">Reboot</a></div>
+<pre><code>exit                                   <span class="c"># из chroot</span>
+ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
+umount -R /mnt
+swapoff /dev/vg0/swap          <span class="c"># если был дисковый swap</span>
+vgchange -an vg0                 <span class="c"># если был LVM</span>
+cryptsetup close cryptlvm        <span class="c"># если было шифрование</span>
+reboot</code></pre>
+<p>Достань флешку. Ожидаемый порядок: прошивка → загрузчик → UKI → <span>запрос пароля LUKS → </span>приглашение входа. Войди как обычный пользователь и проверь:</p>
+<pre><code>nmcli device wifi connect "&lt;SSID&gt;" --ask       <span class="c"># Wi-Fi</span>
+lsblk -f; findmnt -R /; swapon --show
+resolvectl status | head
+efibootmgr
+<span>sudo snapper -c root list
+sudo pacman -S --needed snap-pac            <span class="c"># снимки до и после каждой операции pacman</span>
+</span>sudo pacman -Syu</code></pre>
+<div class="box"><p><b>Проверь:</b> <span>пароль LUKS спрашивается один раз; </span>есть сеть; <code>swapon --show</code> показывает zram (приоритет 100)<span> и дисковый swap (10)</span>.<span> Снимок виден в <code>snapper list</code>: сделай ещё один, <code>sudo snapper -c root create -d "base ok"</code>.</span></p></div>
+
+<h2 class="part">Часть II · комфортный TTY</h2>
+<p style="margin-top:36px">Теперь у тебя рабочая текстовая система. Дальше делаем её удобной: ничего из этого не требует репозитория или скриптов. Мои полные настройки (палитра, панель tmux, neovim) придут в части III и заменят скромные версии отсюда, а старые уйдут в резервную копию.</p>
+
+<h2 class="s" id="t1">16 · Консоль: шрифт и раскладка</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Linux_console">Linux console</a> · <a href="https://wiki.archlinux.org/title/Linux_console#Fonts">Fonts</a></div>
+<p>Шрифт уже в <code>/etc/vconsole.conf</code>. Подбери размер под экран и сохрани:</p>
+<pre><code>setfont ter-v24n
+sudoedit /etc/vconsole.conf          <span class="c"># FONT=ter-v24n</span>
+sudo mkinitcpio -P                   <span class="c"># хук sd-vconsole копирует шрифт в initramfs</span></code></pre>
+<p>Цвета консоли остаются стандартными: палитру приносит часть III.</p>
+
+<h2 class="s" id="t2">17 · fish как интерактивная оболочка</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Fish">Fish</a> · <a href="https://wiki.archlinux.org/title/Command-line_shell#Changing_your_default_shell">Changing your default shell</a></div>
+<div class="opts">
+<div class="opt"><h4><span class="tag t-var">вариант</span> <code>chsh -s /usr/bin/fish</code></h4><p>Проще, но fish становится и login-оболочкой. Скрипты, которые ждут POSIX-оболочку, могут ломаться.</p></div>
+<div class="opt my"><h4><span class="tag t-my">★</span> Запуск из .bashrc</h4><p>Login-оболочка остаётся bash (надёжная основа и вход для восстановления), а работаешь ты в fish. Так советует ArchWiki.</p></div>
+</div>
+<pre><code>sudo pacman -S --needed fish</code></pre>
+<div class="file"><div class="fh"><span>~/.bashrc</span><em>bash</em></div><pre><code>if [[ $(ps --no-header --pid=$PPID --format=comm) != "fish" &amp;&amp; -z ${BASH_EXECUTION_STRING} &amp;&amp; ${SHLVL} == 1 ]]
+then
+	shopt -q login_shell &amp;&amp; LOGIN_OPTION='--login' || LOGIN_OPTION=''
+	exec fish $LOGIN_OPTION
+fi</code></pre></div>
+<p>Условия: родитель не fish (иначе запуск bash из fish зациклится), это не <code>bash -c</code> (скрипты не перехватываются) и это первая оболочка. На вики показана упрощённая форма (<code>exec fish</code> с проверкой <code>BASH_EXECUTION_STRING</code>), защиту от цикла я добавил сам. Команда <code>bash</code> всегда открывает bash. Root остаётся на bash: так надёжнее для восстановления.</p>
+<div class="box warn"><p>Синтаксис fish другой: статус последней команды это <code>$status</code>, а не <code>$?</code>; переменные <code>set -x VAR значение</code>; подстановка <code>(cmd)</code>. Инструкции частей I и II выполняй в bash (live-среда и chroot он и так).</p></div>
+
+<h2 class="s" id="t3">18 · Пакеты и pacman</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Pacman">pacman</a> · <a href="https://wiki.archlinux.org/title/Pacman/Tips_and_tricks">Tips and tricks</a> · <a href="https://wiki.archlinux.org/title/Reflector">Reflector</a> · <a href="https://wiki.archlinux.org/title/Makepkg">makepkg</a></div>
+<pre><code>sudo pacman -S --needed pacman-contrib reflector</code></pre>
+<div class="file"><div class="fh"><span>/etc/pacman.conf</span><em>conf</em></div><pre><code>[options]
+Color
+VerbosePkgLists
+ParallelDownloads = 5
+ILoveCandy</code></pre></div>
+<p>Раскомментируй или добавь эти опции в секции <code>[options]</code>, остальное оставь как есть. Они делают вывод читаемым и ускоряют загрузку.</p>
+<div class="file"><div class="fh"><span>/etc/makepkg.conf</span><em>conf</em></div><pre><code>MAKEFLAGS="-j$(( ($(nproc) + 1) / 2 ))"</code></pre></div>
+<p>Сборка AUR-пакетов использует половину ядер: системой можно пользоваться во время сборки. Для очистки кэша пакетов:</p>
+<pre><code>sudo systemctl enable --now paccache.timer</code></pre>
+<p>Обновление: <code>sudo pacman -Syu</code>. Если загрузка медленная, обнови зеркала (шаг 4).</p>
+
+<h2 class="s" id="t4">19 · Инструменты</h2>
+<pre><code>sudo pacman -S --needed tmux neovim btop fastfetch bat yazi \
+  trash-cli unzip zip 7zip usbutils exfatprogs ntfs-3g less man-db git</code></pre>
+<table>
+<tr><th>Инструмент</th><th>Для чего</th><th>Ссылки</th></tr>
+<tr><td>tmux</td><td>панели и вкладки в TTY, сессия живёт при выходе</td><td><a href="https://wiki.archlinux.org/title/Tmux">Tmux</a></td></tr>
+<tr><td>neovim</td><td>редактор</td><td><a href="https://wiki.archlinux.org/title/Neovim">Neovim</a></td></tr>
+<tr><td>btop</td><td>монитор системы</td><td></td></tr>
+<tr><td>fastfetch</td><td>сводка о системе</td><td></td></tr>
+<tr><td>bat, yazi</td><td>просмотр файлов и файловый менеджер в консоли</td><td></td></tr>
+<tr><td>trash-cli</td><td>корзина вместо <code>rm</code></td><td></td></tr>
+<tr><td>unzip zip 7zip</td><td>архивы</td><td></td></tr>
+<tr><td>exfatprogs ntfs-3g</td><td>флешки и диски других ОС</td><td><a href="https://wiki.archlinux.org/title/File_systems">File systems</a></td></tr>
+</table>
+<h3>Минимальные настройки</h3>
+<div class="file"><div class="fh"><span>/etc/environment</span><em>env</em></div><pre><code>EDITOR=nvim
+SUDO_EDITOR=nvim</code></pre></div>
+<div class="file"><div class="fh"><span>~/.config/fish/conf.d/abbrs.fish</span><em>fish</em></div><pre><code>abbr -a -- n nvim
+abbr -a -- ff fastfetch
+abbr -a -- cls clear
+abbr -a -- up 'sudo pacman'
+abbr -a -- s sudo
+abbr -a -- nv sudoedit
+abbr -a -- b btop
+abbr -a -- sp 'sudo snapper -c root'     <span class="c"># только Btrfs (вариант C)</span></code></pre></div>
+<p>Это именно <i>abbr</i>, а не alias: при пробеле сокращение раскрывается в полную команду, и в истории остаётся настоящее имя.</p>
+<div class="file"><div class="fh"><span>~/.tmux.conf</span><em>conf</em></div><pre><code>set -g mouse on
+set -g history-limit 20000
+set -g base-index 1
+set -g status on
+set -g status-interval 15
+set -g status-right '%a %d.%m %H:%M'</code></pre></div>
+
+<h2 class="s" id="t5">20 · Файрвол</h2>
+<div>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Nftables">nftables</a> · <a href="https://wiki.archlinux.org/title/Simple_stateful_firewall">Simple stateful firewall</a> · <a href="https://wiki.archlinux.org/title/Security#Firewalls">Security: Firewalls</a></div>
+<p>Простой файрвол с состоянием: входящее запрещено по умолчанию, разрешены ответы на твои соединения, loopback и ICMP. Исходящее не ограничивается. Для ноутбука без серверных служб этого достаточно.</p>
+<pre><code>sudo pacman -S --needed nftables</code></pre>
+<div class="file"><div class="fh"><span>/etc/nftables.conf</span><em>nft</em></div><pre><code>#!/usr/bin/nft -f
+destroy table inet filter
+table inet filter {
+  chain input {
+    type filter hook input priority filter
+    policy drop
+
+    ct state invalid drop comment "early drop of invalid connections"
+    ct state {established, related} accept comment "allow tracked connections"
+    iif lo accept comment "allow from loopback"
+
+    meta l4proto { icmp, icmpv6 } accept comment "allow icmp"
+    pkttype host limit rate 5/second counter reject with icmpx type admin-prohibited
+    counter
+  }
+  chain forward {
+    type filter hook forward priority filter
+    policy drop
+  }
+}</code></pre></div>
+<pre><code>sudo nft -c -f /etc/nftables.conf          <span class="c"># проверка синтаксиса, ничего не применяет</span>
+sudo systemctl enable --now nftables.service
+sudo nft list ruleset</code></pre>
+<p>Служба <code>nftables.service</code> одноразовая: она загружает правила и завершается, поэтому <code>systemctl status</code> показывает <code>inactive (dead)</code>, а в логе <code>Finished Netfilter Tables</code>. Это нормально. Работают ли правила, проверяет <code>sudo nft list table inet filter</code>.</p>
+<p><code>destroy table</code> удаляет только <i>свою</i> таблицу <code>inet filter</code> и пересоздаёт её: чужие таблицы (NetworkManager, Docker) остаются нетронутыми, в отличие от <code>flush ruleset</code> (так сделан пакетный <code>/etc/nftables.conf</code>, смотри его вики-страницу). Если позже включишь службу, слушающую порт (SSH, веб-сервер), открой нужный порт в цепочке <code>input</code>, иначе доступа не будет. <span class="tag t-my">★</span> У меня точка доступа и Tailscale добавляют свои правила: это часть III (<code>deploy.sh</code> заменит этот файл версией с ними).</p>
+</div>
+
+<h2 class="s" id="t6">21 · SSH (по желанию)</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/OpenSSH">OpenSSH</a> · <a href="https://wiki.archlinux.org/title/SSH_keys">SSH keys</a></div>
+<p>Сервер SSH включай, только если он нужен. Клиент (<code>openssh</code>) ставится с пакетом, а сервер <code>sshd</code> по умолчанию выключен.</p>
+<div class="opts">
+<div class="opt my"><h4><span class="tag t-my">★ в базе</span> Только клиент</h4><p>Ты подключаешься к другим машинам, а к твоей никто. Дальше ничего делать не нужно.</p></div>
+<div class="opt"><h4><span class="tag t-var">вариант</span> Сервер на этой машине</h4><p>Ниже усиленные настройки: нестандартный порт, один пользователь, без root, вход по ключу (так настроен мой <code>sshd</code> в части III).</p></div>
+</div>
+<div class="file"><div class="fh"><span>/etc/ssh/sshd_config.d/50-hardening.conf</span><em>conf</em></div><pre><code>Port 9728
+PermitRootLogin no
+AllowUsers {{USER}}
+PubkeyAuthentication yes
+PasswordAuthentication yes
+KbdInteractiveAuthentication no
+MaxAuthTries 3
+X11Forwarding no</code></pre></div>
+<p>Когда проверишь вход по ключу, поставь <code>PasswordAuthentication no</code>. Порт 9728 мой, выбери любой свободный. В файрволе (шаг 20) этот порт нужно открыть, добавив в цепочку <code>input</code> строку <code>tcp dport 9728 accept</code> (или ограничь интерфейсом). <code>sudo systemctl enable --now sshd</code>.</p>
+
+<h2 class="s" id="t7">22 · Менеджер входа Ly</h2>
+<div>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Ly">Ly</a> · <a href="https://wiki.archlinux.org/title/Display_manager">Display manager</a></div>
+<p>Ly это минимальный менеджер входа прямо на TTY. Он нужен, чтобы вход выглядел одинаково и для консоли, и для любой графики. Пока в системе нет графических сессий, он предлагает пункт <b>shell</b>.</p>
+<pre><code>sudo pacman -S --needed ly
+sudo systemctl disable getty@tty2.service
+sudo systemctl enable ly@tty2.service
+sudo reboot</code></pre>
+<p>На tty1 остаётся обычный getty как запасной вход, на tty2 открывается Ly. Имя службы зависит от версии пакета: на ArchWiki оно описано как <code>ly.service</code>, у новых версий это <code>ly@tty2.service</code>; проверь <code>systemctl list-unit-files 'ly*'</code> и включай то, что есть. Настройки в <code>/etc/ly/config.ini</code>, мой внешний вид придёт в части III.</p>
+</div>
+
+<h2 class="s" id="t8">23 · Критерий «база готова»</h2>
+<div class="box my"><ul>
+<li>Система грузится<span> с запросом пароля LUKS</span> и открывает fish (через Ly или tty1).</li>
+<li>Работают сеть (<code>nmcli</code>), обновления (<code>sudo pacman -Syu</code>), zram<span> и дисковый swap</span>.</li>
+<li>Установлены tmux, neovim, btop, fastfetch, yazi; шрифт и раскладка консоли правильные.</li>
+<li>Файрвол включён: <code>sudo nft list ruleset</code> показывает <code>policy drop</code> во входящей цепочке.</li>
+<li>Есть снимок «base ok», а <code>snap-pac</code> делает пары снимков при обновлениях.</li>
+</ul>
+<p>Это и есть моя база: она одинаково воспроизводится на любой машине и годится как отправная точка для любой графической среды.</p></div>
+
+<h2 class="part">Часть III · графика</h2>
+<h2 class="s" id="g1" style="margin-top:44px">24 · Выбор пути</h2>
+<div class="opts">
+<div class="opt"><h4><span class="tag t-var">Свой путь</span></h4><p>Ставишь любую среду из пакетов и настраиваешь сам. Консоль и Ly из части II ни с чем не конфликтуют.</p></div>
+<div class="opt my"><h4><span class="tag t-my">★ Путь zen</span></h4><p>Niri, панель, меню, блокировка, звук, тема и мои настройки консоли из репозитория одним скриптом. Итог повторяет мой ноутбук.</p></div>
+</div>
+
+<h2 class="s" id="g2">25 · Свой путь: среды и минимум</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Desktop_environment">Desktop environment</a> · <a href="https://wiki.archlinux.org/title/Wayland">Wayland</a> · <a href="https://wiki.archlinux.org/title/PipeWire">PipeWire</a> · <a href="https://wiki.archlinux.org/title/XDG_Desktop_Portal">XDG Desktop Portal</a></div>
+<table>
+<tr><th>Среда</th><th>Пакеты</th><th>Комментарий</th></tr>
+<tr><td>GNOME</td><td><code>gnome</code></td><td>всё включено; сессия появится в Ly</td></tr>
+<tr><td>KDE Plasma</td><td><code>plasma-meta konsole dolphin</code></td><td>тоже в Ly</td></tr>
+<tr><td>Hyprland</td><td><code>hyprland xdg-desktop-portal-hyprland foot waybar</code></td><td>тайловая, больше ручной настройки</td></tr>
+<tr><td>sway</td><td><code>sway foot waybar</code></td><td>как i3 на Wayland</td></tr>
+<tr><td>Niri без zen</td><td><code>niri xwayland-satellite foot waybar</code></td><td>прокручиваемые колонки</td></tr>
+</table>
+<p>Общее для любой Wayland-среды, если её нет в наборе: звук <code>pipewire pipewire-pulse wireplumber</code>, порталы <code>xdg-desktop-portal-gtk</code> (и портал своей среды), агент polkit, шрифты (<code>ttf-jetbrains-mono-nerd</code>), Bluetooth <code>bluez bluez-utils</code>, <code>brightnessctl</code>. Видеодрайвер: <code>mesa</code> + <code>vulkan-radeon</code> (AMD), <code>mesa</code> + <code>vulkan-intel</code> (Intel), <code>nvidia-open</code> (NVIDIA). Если драйвер нужен раньше времени (красивее ввод пароля), добавь модуль (<code>amdgpu</code>, <code>i915</code>) в <code>MODULES</code> файла <code>mkinitcpio.conf</code> и пересобери <code>mkinitcpio -P</code>.</p>
+
+<h2 class="s" id="g3">26 · Путь zen: что приносит репозиторий</h2>
+<ul>
+<li><b>Niri</b> с логикой пар окон и стеков (демон <code>zen-autowidth</code>), горячие клавиши, изменение размера.</li>
+<li><b>Waybar, Rofi, mako, gtklock</b>: панель, меню, уведомления, блокировка в одной палитре.</li>
+<li><b>Меню zen</b>: сеть, точка доступа, звук, питание, буфер обмена, мониторы, приложения.</li>
+<li><b>Ly и Limine</b> в цветах темы, <b>палитра консоли</b> (24-битная, <code>setvtrgb</code>, юнит <code>zen-console.service</code>), мои настройки <b>fish, tmux (с панелью состояния), neovim, btop, fastfetch</b>, тема GTK/Qt и курсор.</li>
+<li>Системные настройки: pacman, makepkg, logind, sleep, NetworkManager, nftables (с правилами точки доступа и Tailscale), sshd, zram.</li>
+</ul>
+<p>Всё ставится поверх базы из частей I и II. Скрипт можно запускать повторно.</p>
+
+<h2 class="s" id="g4">27 · Профиль машины</h2>
+<p>Файлы, зависящие от машины (твой UUID LUKS, модули железа, микрокод), лежат в <code>hosts/&lt;имя-машины&gt;/</code>. Для своей машины создай каталог с тем же именем, что <code>/etc/hostname</code>:</p>
+<pre><code>git clone &lt;URL-репозитория&gt; ~/Projects/zen
+cd ~/Projects/zen
+H=hosts/$(cat /etc/hostname)
+mkdir -p $H/etc/kernel
+cp /etc/kernel/cmdline    $H/etc/kernel/cmdline
+cp /etc/mkinitcpio.conf   $H/etc/mkinitcpio.conf
+printf '%s\n' {{UCODE}} snapper snap-pac &gt; $H/packages.txt</code></pre>
+<div class="box warn"><p><b>Эти файлы личные.</b> В <code>cmdline</code> лежит UUID раздела. Если форкаешь репозиторий, держи профиль своей машины в приватной копии или в <code>.gitignore</code>.</p></div>
+<p>Без профиля применяются только общие файлы, а загрузка (cmdline, initramfs) остаётся как у тебя.</p>
+
+<h2 class="s" id="g5">28 · deploy.sh и zen apply</h2>
+<pre><code>cd ~/Projects/zen
+sudo snapper -c root create -d "before zen"
+./deploy.sh</code></pre>
+<table>
+<tr><th>Шаг</th><th>Что происходит</th></tr>
+<tr><td>Пакеты</td><td>списки <code>packages/base.txt</code>, <code>desktop.txt</code>, <code>extra.txt</code> и пакеты профиля машины</td></tr>
+<tr><td>Файлы</td><td><code>etc/</code> и <code>usr/local/</code> в систему, <code>home/</code> в домашний каталог; прежние версии в <code>backup-*</code></td></tr>
+<tr><td>Курсор</td><td>скачивается Bibata-Modern-Classic</td></tr>
+<tr><td>Службы</td><td>включаются системные и пользовательские службы, перезапускается <code>zen-autowidth</code></td></tr>
+<tr><td>Сборка</td><td>пересобирается initramfs, применяется тема (<code>zen apply</code>): палитра, Limine, консоль, GTK/Qt, foot, tmux</td></tr>
+</table>
+<p>Отдельно переприменить тему: <code>zen apply</code>. После первого запуска перезагрузись и выбери в Ly сессию <b>niri</b>. Если снимков нет (ext4), сделай резервную копию настроек вручную.</p>
+
+<h2 class="s" id="g6">29 · Проверка и откат</h2>
+<pre><code>systemctl --user status zen-autowidth
+niri msg version
+journalctl --user -u zen-autowidth -n 30
+sudo snapper -c root create -d "zen deployed"</code></pre>
+<table>
+<tr><th>Клавиши</th><th>Действие</th></tr>
+<tr><td>Mod+Alt+стрелки</td><td>изменить размер пары окон, фокус остаётся на паре</td></tr>
+<tr><td>Mod+[ / ]</td><td>втянуть окно в соседнюю колонку (стек); ширина запоминается и возвращается</td></tr>
+<tr><td>Mod+K</td><td>caffeine (не гасить экран)</td></tr>
+</table>
+<p>Остальное: <code>~/.config/niri/config.kdl</code> (секции Main, Utilities, Menu, Monitor, Audio, Network). Если логика окон не обновилась: <code>systemctl --user restart zen-autowidth.service</code>. Откат файлов: <code>sudo snapper -c root list</code>, затем <code>sudo snapper -c root undochange N..M</code>. Прежние настройки лежат в <code>backup-*</code> рядом с репозиторием.</p>
+
+<h2 class="part">Приложения</h2>
+<h2 class="s" id="a1" style="margin-top:44px">A · Что нельзя публиковать</h2>
+<div class="box warn"><ul>
+<li>Пароли (LUKS, пользователь, root), ключи, токены, почту.</li>
+<li>UUID разделов и томов (<code>blkid</code>, <code>luksUUID</code>), готовые fstab и cmdline.</li>
+<li>Имя машины и пользователя, если они выдают личность.</li>
+<li>Данные Wi-Fi и <code>/etc/NetworkManager/system-connections</code>.</li>
+<li>Резервные копии <code>backup-*</code>, истории bash и fish.</li>
+</ul></div>
+<p>Перед публикацией своих конфигов: <code>grep -rE '[0-9a-f]{8}-[0-9a-f]{4}-' .</code></p>
+
+<h2 class="s" id="a2">B · Восстановление</h2>
+<div class="links"><b>Wiki:</b> <a href="https://wiki.archlinux.org/title/Chroot">chroot</a></div>
+<p>Загрузись с флешки и зайди в установленную систему через chroot (команды собраны под твой выбор):</p>
+<p><span class="tag t-my">★ C</span> (LUKS, LVM, Btrfs):</p>
+<pre><code>cryptsetup open {{P2}} cryptlvm
+vgchange -ay vg0
+mount -o subvol=@ /dev/vg0/root /mnt
+mount --mkdir -o subvol=@home /dev/vg0/root /mnt/home
+mount --mkdir -o subvol=@var_log /dev/vg0/root /mnt/var/log
+mount --mkdir -o subvol=@var_cache /dev/vg0/root /mnt/var/cache
+mount --mkdir -o subvol=@snapshots /dev/vg0/root /mnt/.snapshots
+mount --mkdir {{P1}} /mnt/efi
+arch-chroot /mnt
+mkinitcpio -P</code></pre>
+<p>Для A и B: открой LUKS, (для B) <code>vgchange -ay vg0</code>, затем <code>mount /dev/mapper/cryptlvm /mnt</code> (A) или <code>mount /dev/vg0/root /mnt</code> (B), ESP в <code>/mnt/efi</code>. Без шифрования пропусти <code>cryptsetup</code>.</p>
+<p>Если не грузится после обновления, выбери в меню запасное ядро (LTS). Если ломается initramfs, сверь хуки (шаг 11) и UUID в cmdline.</p>
+
+<h2 class="s" id="a3">C · Источники</h2>
+<ul>
+<li><a href="https://wiki.archlinux.org/title/Installation_guide">ArchWiki: Installation guide</a>, <a href="https://wiki.archlinux.org/title/Dm-crypt">dm-crypt</a>, <a href="https://wiki.archlinux.org/title/LVM">LVM</a>, <a href="https://wiki.archlinux.org/title/Btrfs">Btrfs</a>, <a href="https://wiki.archlinux.org/title/Snapper">Snapper</a></li>
+<li><a href="https://wiki.archlinux.org/title/Unified_kernel_image">UKI</a>, <a href="https://wiki.archlinux.org/title/Mkinitcpio">mkinitcpio</a>, <a href="https://wiki.archlinux.org/title/Limine">Limine</a>, <a href="https://wiki.archlinux.org/title/Systemd-boot">systemd-boot</a></li>
+<li><a href="https://wiki.archlinux.org/title/Fish">Fish</a>, <a href="https://wiki.archlinux.org/title/Nftables">nftables</a>, <a href="https://wiki.archlinux.org/title/Ly">Ly</a>, <a href="https://wiki.archlinux.org/title/Zram">Zram</a>, <a href="https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate">Suspend and hibernate</a></li>
+</ul>
+<p class="hint">Команды сверяй с ArchWiki: пакеты, хуки и имена служб иногда меняются.</p>
+</main>
+</div>
+<script>
+var V={};
+function derive(){var d=V.DISK||'';var sep=/\d$/.test(d)?'p':'';V.P1=d+sep+'1';V.P2=d+sep+'2';}
+(function(){
+ var w=document.createTreeWalker(document.querySelector('main'),NodeFilter.SHOW_TEXT);var nodes=[];while(w.nextNode())nodes.push(w.currentNode);
+ nodes.forEach(function(t){if(t.nodeValue.indexOf('{{')<0)return;var p=t.parentNode;
+  var parts=t.nodeValue.split(/(\{\{[A-Z0-9]+\}\})/);var f=document.createDocumentFragment();
+  parts.forEach(function(s){var m=s.match(/^\{\{([A-Z0-9]+)\}\}$/);if(m){var sp=document.createElement('span');sp.className='v';sp.dataset.k=m[1];f.appendChild(sp)}else f.appendChild(document.createTextNode(s))});
+  p.replaceChild(f,t)});
+})();
+function render(){derive();document.querySelectorAll('span.v').forEach(function(s){s.textContent=V[s.dataset.k]||('{{'+s.dataset.k+'}}')});}
+document.querySelectorAll('input[data-k]').forEach(function(i){V[i.dataset.k]=i.value;i.addEventListener('input',function(){V[i.dataset.k]=i.value;render()})});
+render();
+document.querySelectorAll('pre').forEach(function(p){var b=document.createElement('button');b.type='button';b.className='cp';b.textContent='копировать';
+ b.onclick=function(){var c=p.querySelector('code');var t=c.innerText;var ok=function(){b.textContent='готово'};var no=function(){var r=document.createRange();r.selectNodeContents(c);var s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='выделено'};
+ try{navigator.clipboard.writeText(t).then(ok,no)}catch(e){no()}setTimeout(function(){b.textContent='копировать'},1500)};p.appendChild(b)});
+document.getElementById('theme').onclick=function(){var r=document.documentElement,d=r.getAttribute('data-theme');var dark=d?d==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.setAttribute('data-theme',dark?'light':'dark')};
+</script>
+</body>
+</html>

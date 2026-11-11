@@ -304,14 +304,16 @@ def weather_lines():
     night = bool(rise and sets) and not (rise.time() <= now.time() <= sets.time())
     what = describe(cur)
     room = COLS - len(label) - 1
-    if len(what) > room:
-        what = what[:room - 1] + "…"
     if METRIC:
         wind, wind_unit = round(int(cur["windspeedKmph"]) / 3.6), _("m/s")
     else:
         wind, wind_unit = cur["windspeedMiles"], _("mph")
-    lines = [
-        row(c(label, bold=True), c(what, MUTED)),
+    if len(what) <= room:
+        head = [row(c(label, bold=True), c(what, MUTED))]
+    else:
+        # a long description does not fit next to the place: give it its own line(s)
+        head = [c(label, bold=True)] + [c(part, MUTED) for part in textwrap.wrap(what, COLS)]
+    lines = head + [
         row(c(wwo_icon(cur["weatherCode"], night), ACCENT) + "  " + c(degrees(cur["temp_C"]), bold=True),
             c(_("feels like") + " ", MUTED) + degrees(cur["FeelsLikeC"])),
         row(c(WIND, ACCENT) + f"  {wind}" + c(" " + wind_unit, MUTED),
